@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 type DayWeather struct {
@@ -50,8 +51,29 @@ type Source struct {
 	Distance         float64 `json:"distance"`
 }
 
+var url = "https://api.brightsky.dev/weather?lat=52&lon=7.6&date=2020-04-21"
+var uurl = "https://api.brightsky.dev/weather?"
+var date = "2020-04-21"
+var latitude float64 = 52
+var longitude float64 = 7.6
+
+// Date Format year-month-day
+func SetDate(Date string) {
+	date = Date
+	reloadURL()
+}
+
+func SetLocation(Latitude float64, Longitude float64) {
+	latitude = Latitude
+	longitude = Longitude
+	reloadURL()
+}
+
+func reloadURL() {
+	url = uurl + "lat=" + strconv.FormatFloat(latitude, 'f', 2, 64) + "&lon=" + strconv.FormatFloat(longitude, 'f', 2, 64) + "&date=" + date
+}
+
 func main() {
-	url := "https://api.brightsky.dev/weather?lat=52&lon=7.6&date=2020-04-21"
 	var today DayWeather
 	response, err := http.Get(url)
 	if err != nil {
