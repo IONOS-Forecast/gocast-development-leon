@@ -69,6 +69,12 @@ func SetLocation(Latitude float64, Longitude float64) {
 	reloadURL()
 }
 
+func SetDateAndLocation(Date string, Latitude float64, Longitude float64) {
+	latitude = Latitude
+	longitude = Longitude
+	reloadURL()
+}
+
 func reloadURL() {
 	url = uurl + "lat=" + strconv.FormatFloat(latitude, 'f', 2, 64) + "&lon=" + strconv.FormatFloat(longitude, 'f', 2, 64) + "&date=" + date
 }
