@@ -61,7 +61,15 @@ var longitude float64 = 7.6
 // Date Format year-month-day
 func SetDate(year, month, day int) {
 	if month <= 12 && month >= 1 && year >= 2010 && year <= time.Now().Year() && day >= 0 && day <= 31 {
-		date = string(year) + "-" + string(month) + "-" + string(day)
+		dday := string(day)
+		if day < 10 {
+			dday = "0" + string(day)
+		}
+		mmonth := string(month)
+		if month < 10 {
+			mmonth = "0" + string(month)
+		}
+		date = string(year) + "-" + mmonth + "-" + dday
 		reloadURL()
 	}
 }
