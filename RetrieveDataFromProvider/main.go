@@ -67,8 +67,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(today.Weather[0].Temperature)
-	/*mdata, err := json.MarshalIndent(today, "", "  ")
+	fmt.Println(today.Weather[1])
+	mdata, err := json.MarshalIndent(today, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func main() {
 	err = saveJSONFile("weather.json", mdata)
 	if err != nil {
 		log.Fatal(err)
-	}*/
+	}
 }
 
 func saveJSONFile(filename string, data []byte) error {
@@ -92,3 +92,12 @@ func saveJSONFile(filename string, data []byte) error {
 	fmt.Println("File created!")
 	return nil
 }
+
+// jq commands:
+// 2: cat weather.json | jq
+// 3.1: cat weather.json | jq '.weather[1]'
+// 3.2: cat weather.json | jq '.weather[] | select(.wind_speed>13.3)'
+// 3.3: cat weather.json | jq '.weather[] | [.temperature, .wind_speed, .relative_humidity]'
+// 3.4: cat weather.json | jq '[.weather[].temperature] | add / length'
+// 3.5 Sorting: cat weather.json | jq '.weather[].temperature' | sort -n
+// 3.5 Finding: cat weather.json | jq '[.weather[].temperature] | max'
