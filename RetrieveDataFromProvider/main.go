@@ -109,6 +109,10 @@ func reloadURL() {
 	fmt.Println(u.Redacted())
 }
 
+func ShowWeatherFromTime(day DayWeather, t time.Time) {
+	fmt.Println(day.Weather[t.Hour()])
+}
+
 func main() {
 	SetDateAndLocation(2025, 10, 5, 54, 14)
 
@@ -127,7 +131,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(today.Weather[time.Now().Hour()])
 	/*mdata, err := json.MarshalIndent(today, "", "  ")
 	if err != nil {
 		log.Fatal(err)
