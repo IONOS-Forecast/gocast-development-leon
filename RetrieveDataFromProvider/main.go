@@ -62,17 +62,11 @@ var longitude float64 = 7.6
 // Date Format year-month-day
 func SetDate(year, month, day int) {
 	if month <= 12 && month >= 1 && year >= 2010 && year <= time.Now().Year() && day >= 0 && day <= 31 {
-		_day := fmt.Sprintf("%02d", day)
-		_month := fmt.Sprintf("%02d", month)
-		fmt.Println(_day)
-		fmt.Println(_month)
-		fmt.Println(strconv.Itoa(year))
-		date = strconv.Itoa(year) + "-" + _month + "-" + _day
-		fmt.Println(date)
+		date = fmt.Sprintf("%d-02%d-02%d", year, month, day)
 		reloadURL()
 	} else {
-		date = strconv.Itoa(time.Now().Year()) + "-" + fmt.Sprintf("%02d", int(time.Now().Month())) + "-" + strconv.Itoa(time.Now().Day())
-		fmt.Println(date)
+		layout := "2006-01-02"
+		date = time.Now().Format(layout)
 		// Make a message in app for user: "Incorrect Date" (something like that)
 	}
 }
