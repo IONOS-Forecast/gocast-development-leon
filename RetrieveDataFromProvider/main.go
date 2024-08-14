@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 type DayWeather struct {
@@ -58,20 +59,24 @@ var latitude float64 = 52
 var longitude float64 = 7.6
 
 // Date Format year-month-day
-func SetDate(Date string) {
-	date = Date
-	reloadURL()
+func SetDate(year, month, day int) {
+	if month <= 12 && month >= 1 && year >= 2010 && year <= time.Now().Year() && day >= 0 && day <= 31 {
+		date = string(year) + "-" + string(month) + "-" + string(day)
+		reloadURL()
+	}
 }
 
 func SetLocation(Latitude float64, Longitude float64) {
-	latitude = Latitude
-	longitude = Longitude
-	reloadURL()
+	if Latitude <= 54 && Latitude >= 48 && Longitude <= 14 && Longitude >= 6 {
+		latitude = Latitude
+		longitude = Longitude
+		reloadURL()
+	}
 }
 
-func SetDateAndLocation(Date string, Latitude float64, Longitude float64) {
-	latitude = Latitude
-	longitude = Longitude
+func SetDateAndLocation(year, month, day int, Latitude float64, Longitude float64) {
+	SetDate(year, month, day)
+	SetLocation(Latitude, Longitude)
 	reloadURL()
 }
 
