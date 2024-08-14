@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -17,43 +18,43 @@ type DayWeather struct {
 }
 
 type HourWeather struct {
-	Timestamp                  string  `json:"timestamp"`
-	Source_id                  int     `json:"source_id"`
-	Precipitation              float64 `json:"precipitation"`
-	Pressure_msl               float64 `json:"pressure_msl"`
-	Sunshine                   float64 `json:"sunshine"`
-	Temperature                float64 `json:"temperature"`
-	Wind_direction             int     `json:"wind_direction"`
-	Wind_speed                 float64 `json:"wind_speed"`
-	Cloud_cover                int     `json:"cloud_cover"`
-	Dew_point                  float64 `json:"dew_point"`
-	Relative_humidity          int     `json:"relative_humidity"`
-	Visibility                 int     `json:"visibility"`
-	Wind_gust_direction        int     `json:"wind_gust_direction"`
-	Wind_gust_speed            float64 `json:"wind_gust_speed"`
-	Condition                  string  `json:"condition"`
-	Precipation_probability    float64 `json:"precipation_probability"`
-	Precipation_probability_6h float64 `json:"precipation_probability_6h"`
-	Solar                      float64 `json:"solar"`
-	Icon                       string  `json:"icon"`
+	Timestamp                string  `json:"timestamp"`
+	SourceId                 int     `json:"source_id"`
+	Precipitation            float64 `json:"precipitation"`
+	PressureMsl              float64 `json:"pressure_msl"`
+	Sunshine                 float64 `json:"sunshine"`
+	Temperature              float64 `json:"temperature"`
+	WindDirection            int     `json:"wind_direction"`
+	WindSpeed                float64 `json:"wind_speed"`
+	CloudCover               int     `json:"cloud_cover"`
+	DewPoint                 float64 `json:"dew_point"`
+	RelativeHumidity         int     `json:"relative_humidity"`
+	Visibility               int     `json:"visibility"`
+	WindGustDirection        int     `json:"wind_gust_direction"`
+	WindGustSpeed            float64 `json:"wind_gust_speed"`
+	Condition                string  `json:"condition"`
+	PrecipationProbability   float64 `json:"precipation_probability"`
+	PrecipationProbability6h float64 `json:"precipation_probability_6h"`
+	Solar                    float64 `json:"solar"`
+	Icon                     string  `json:"icon"`
 }
 
 type Source struct {
-	Id               int     `json:"id"`
-	Dwd_station_id   string  `json:"dwd_station_id"`
-	Observation_type string  `json:"observation_type"`
-	Latitude         float64 `json:"lat"`
-	Longitude        float64 `json:"lon"`
-	Height           float64 `json:"height"`
-	Station_name     string  `json:"station_name"`
-	Wmo_station_id   string  `json:"wmo_station_id"`
-	First_record     string  `json:"first_record"`
-	Last_record      string  `json:"last_record"`
-	Distance         float64 `json:"distance"`
+	ID              int     `json:"id"`
+	DwdStationId    string  `json:"dwd_station_id"`
+	ObservationType string  `json:"observation_type"`
+	Latitude        float64 `json:"lat"`
+	Longitude       float64 `json:"lon"`
+	Height          float64 `json:"height"`
+	StationName     string  `json:"station_name"`
+	WmoStationId    string  `json:"wmo_station_id"`
+	FirstRecord     string  `json:"first_record"`
+	LastRecord      string  `json:"last_record"`
+	Distance        float64 `json:"distance"`
 }
 
-var url = "https://api.brightsky.dev/weather?lat=52&lon=7.6&date=2020-04-21"
-var uurl = "https://api.brightsky.dev/weather?"
+var URL = "https://api.brightsky.dev/weather?lat=52&lon=7.6&date=2020-04-21"
+var _url = "https://api.brightsky.dev/weather?"
 var date = "2020-04-21"
 var latitude float64 = 52
 var longitude float64 = 7.6
@@ -61,16 +62,18 @@ var longitude float64 = 7.6
 // Date Format year-month-day
 func SetDate(year, month, day int) {
 	if month <= 12 && month >= 1 && year >= 2010 && year <= time.Now().Year() && day >= 0 && day <= 31 {
-		dday := string(day)
-		if day < 10 {
-			dday = "0" + string(day)
-		}
-		mmonth := string(month)
-		if month < 10 {
-			mmonth = "0" + string(month)
-		}
-		date = string(year) + "-" + mmonth + "-" + dday
+		_day := fmt.Sprintf("%02d", day)
+		_month := fmt.Sprintf("%02d", month)
+		fmt.Println(_day)
+		fmt.Println(_month)
+		fmt.Println(strconv.Itoa(year))
+		date = strconv.Itoa(year) + "-" + _month + "-" + _day
+		fmt.Println(date)
 		reloadURL()
+	} else {
+		date = strconv.Itoa(time.Now().Year()) + "-" + fmt.Sprintf("%02d", int(time.Now().Month())) + "-" + strconv.Itoa(time.Now().Day())
+		fmt.Println(date)
+		// Make a message in app for user: "Incorrect Date" (something like that)
 	}
 }
 
@@ -79,22 +82,38 @@ func SetLocation(Latitude float64, Longitude float64) {
 		latitude = Latitude
 		longitude = Longitude
 		reloadURL()
+	} else {
+		// Make a message in app for user: "Not in range" (something like that)
 	}
 }
 
 func SetDateAndLocation(year, month, day int, Latitude float64, Longitude float64) {
 	SetDate(year, month, day)
 	SetLocation(Latitude, Longitude)
-	reloadURL()
 }
 
 func reloadURL() {
-	url = uurl + "lat=" + strconv.FormatFloat(latitude, 'f', 2, 64) + "&lon=" + strconv.FormatFloat(longitude, 'f', 2, 64) + "&date=" + date
+	u, err := url.Parse(URL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	values := u.Query()
+	values.Set("lat", strconv.FormatFloat(latitude, 'f', 2, 64))
+	values.Set("lon", strconv.FormatFloat(longitude, 'f', 2, 64))
+	values.Set("date", date)
+	fmt.Println(u.Query())
+	fmt.Println(u.Redacted())
+	u.RawQuery = values.Encode()
+	URL = u.Redacted()
+	fmt.Println(u.Query())
+	fmt.Println(u.Redacted())
 }
 
 func main() {
+	SetDateAndLocation(2025, 10, 5, 54, 14)
+
 	var today DayWeather
-	response, err := http.Get(url)
+	response, err := http.Get(URL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -108,8 +127,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(today.Weather[1])
-	mdata, err := json.MarshalIndent(today, "", "  ")
+	fmt.Println(today.Weather[time.Now().Hour()])
+	/*mdata, err := json.MarshalIndent(today, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -117,7 +136,7 @@ func main() {
 	err = saveJSONFile("weather.json", mdata)
 	if err != nil {
 		log.Fatal(err)
-	}
+	}*/
 }
 
 func saveJSONFile(filename string, data []byte) error {
