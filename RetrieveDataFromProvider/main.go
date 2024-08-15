@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -106,13 +107,13 @@ func SetLocationByCityName(name string, cities map[string]City) {
 			foundcity = owcity
 		}
 	}
-	cities[foundcity.Name] = City{Lat: foundcity.Lat, Lon: foundcity.Lon}
+	cities[strings.ToLower(foundcity.Name)] = City{Lat: foundcity.Lat, Lon: foundcity.Lon}
 	data, err := json.MarshalIndent(cities, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = saveJSONFile("cities.json", data)
+	err = saveJSONFile("resources", "cities.json", data)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -153,13 +154,14 @@ func ShowWeatherFromTime(day DayWeather, t time.Time) {
 	// Make use of it later
 }
 
+var today DayWeather
+
 func main() {
 	Cities := make(map[string]City)
 	SetLocationByCityName("Berlin", Cities)
 	SetLocationByCityName("München", Cities)
 	SetDateAndLocation(2024, 8, 15, Cities["Berlin"].Lat, Cities["Berlin"].Lon)
 
-	var today DayWeather
 	response, err := http.Get(URL)
 	if err != nil {
 		log.Fatal(err)
@@ -174,19 +176,25 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	/*data, err := json.MarshalIndent(today, "", "  ")
+	data, err := json.MarshalIndent(today, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = saveJSONFile("weather.json", data)
+	err = saveJSONFile("resources", "weather.json", data)
 	if err != nil {
 		log.Fatal(err)
-	}*/
+	}
+	doEvery(10*time.Second, test)
 }
 
-func saveJSONFile(filename string, data []byte) error {
-	file, err := os.Create(filename)
+func saveJSONFile(directory, filename string, data []byte) error {
+	err := os.MkdirAll(directory, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	filePath := fmt.Sprintf("%s/%s", directory, filename)
+	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
@@ -197,6 +205,16 @@ func saveJSONFile(filename string, data []byte) error {
 	}
 	fmt.Println("File created or written!")
 	return nil
+}
+
+func test(time.Time) {
+	ShowWeatherFromTime(today, time.Now())
+}
+
+func doEvery(d time.Duration, f func(time.Time)) {
+	for x := range time.Tick(d) {
+		f(x)
+	}
 }
 
 // jq commands:

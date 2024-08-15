@@ -2,7 +2,7 @@
   "weather": [
     {
       "timestamp": "2024-01-28T03:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1036.2,
       "sunshine": 0,
@@ -23,7 +23,7 @@
     },
     {
       "timestamp": "2024-01-28T04:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1036.09,
       "sunshine": 0,
@@ -44,7 +44,7 @@
     },
     {
       "timestamp": "2024-01-28T05:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1036.09,
       "sunshine": 0,
@@ -65,7 +65,7 @@
     },
     {
       "timestamp": "2024-01-28T06:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1036.5,
       "sunshine": 0,
@@ -86,7 +86,7 @@
     },
     {
       "timestamp": "2024-01-28T07:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1036.5,
       "sunshine": 0,
@@ -107,7 +107,7 @@
     },
     {
       "timestamp": "2024-01-28T08:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1036.4,
       "sunshine": 38,
@@ -128,7 +128,7 @@
     },
     {
       "timestamp": "2024-01-28T09:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1036.59,
       "sunshine": 60,
@@ -149,7 +149,7 @@
     },
     {
       "timestamp": "2024-01-28T10:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1036.8,
       "sunshine": 60,
@@ -170,7 +170,7 @@
     },
     {
       "timestamp": "2024-01-28T11:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1036.09,
       "sunshine": 60,
@@ -191,7 +191,7 @@
     },
     {
       "timestamp": "2024-01-28T12:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1035.5,
       "sunshine": 60,
@@ -212,7 +212,7 @@
     },
     {
       "timestamp": "2024-01-28T13:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1034.8,
       "sunshine": 60,
@@ -233,7 +233,7 @@
     },
     {
       "timestamp": "2024-01-28T14:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1034,
       "sunshine": 60,
@@ -254,7 +254,7 @@
     },
     {
       "timestamp": "2024-01-28T15:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1033.7,
       "sunshine": 60,
@@ -275,7 +275,7 @@
     },
     {
       "timestamp": "2024-01-28T16:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1033.7,
       "sunshine": 43,
@@ -296,7 +296,7 @@
     },
     {
       "timestamp": "2024-01-28T17:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1033.7,
       "sunshine": 0,
@@ -317,7 +317,7 @@
     },
     {
       "timestamp": "2024-01-28T18:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1033.59,
       "sunshine": 0,
@@ -338,7 +338,7 @@
     },
     {
       "timestamp": "2024-01-28T19:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1033.3,
       "sunshine": 0,
@@ -359,7 +359,7 @@
     },
     {
       "timestamp": "2024-01-28T20:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1032.9,
       "sunshine": 0,
@@ -380,7 +380,7 @@
     },
     {
       "timestamp": "2024-01-28T21:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1032.8,
       "sunshine": 0,
@@ -401,7 +401,7 @@
     },
     {
       "timestamp": "2024-01-28T22:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1032.59,
       "sunshine": 0,
@@ -422,7 +422,7 @@
     },
     {
       "timestamp": "2024-01-28T23:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1032.2,
       "sunshine": 0,
@@ -443,7 +443,7 @@
     },
     {
       "timestamp": "2024-01-29T00:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1032,
       "sunshine": 0,
@@ -464,7 +464,7 @@
     },
     {
       "timestamp": "2024-01-29T01:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1031.59,
       "sunshine": 0,
@@ -485,7 +485,7 @@
     },
     {
       "timestamp": "2024-01-29T02:00:00+00:00",
-      "source_id": 312075,
+      "source_id": 312079,
       "precipitation": 0,
       "pressure_msl": 1031.59,
       "sunshine": 0,
@@ -507,17 +507,17 @@
   ],
   "sources": [
     {
-      "id": 312075,
-      "dwd_station_id": "17483",
+      "id": 312079,
+      "dwd_station_id": "17487",
       "observation_type": "historical",
-      "lat": 52.535,
-      "lon": 13.375,
-      "height": 35.89,
-      "station_name": "Berlin-Mitte/Südpanke",
-      "wmo_station_id": "G539",
+      "lat": 52.497,
+      "lon": 13.398,
+      "height": 35.61,
+      "station_name": "Berlin-Kreuzberg",
+      "wmo_station_id": "G543",
       "first_record": "2024-01-01T00:00:00+00:00",
       "last_record": "2024-08-14T23:00:00+00:00",
-      "distance": 1955
+      "distance": 360
     },
     {
       "id": 303712,
@@ -530,7 +530,7 @@
       "wmo_station_id": "10384",
       "first_record": "2022-09-13T00:00:00+00:00",
       "last_record": "2024-08-14T23:00:00+00:00",
-      "distance": 5889
+      "distance": 3609
     },
     {
       "id": 6885,
@@ -543,7 +543,7 @@
       "wmo_station_id": "10381",
       "first_record": "2010-01-01T00:00:00+00:00",
       "last_record": "2024-08-14T23:00:00+00:00",
-      "distance": 9503
+      "distance": 8425
     }
   ]
 }
