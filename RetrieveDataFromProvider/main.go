@@ -86,6 +86,27 @@ func SetDate(year, month, day int) {
 }
 
 func SetLocationByCityName(name string, cities map[string]City) {
+	cities = ReadCities(cities)
+	if city, exists := cities[strings.ToLower(name)]; exists { // When the city exists
+		fmt.Println("City:", city)
+	} else { // When the city doesn't exist
+		SaveCityByName(name, cities)
+	}
+}
+
+func ReadCities(cities map[string]City) map[string]City {
+	file, err := os.Open("resources/cities.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&cities)
+	return cities
+}
+
+func SaveCityByName(name string, cities map[string]City) {
 	var owcities []OWCity
 	resp, err := http.Get("http://api.openweathermap.org/geo/1.0/direct?q=" + name + "&limit=1&appid=" + apiKey)
 	if err != nil {
@@ -117,7 +138,6 @@ func SetLocationByCityName(name string, cities map[string]City) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//SetLocation(Cities[].Lat, Cities[0].Lon)
 }
 
 func SetLocation(Latitude float64, Longitude float64) {
@@ -159,33 +179,11 @@ var today DayWeather
 func main() {
 	Cities := make(map[string]City)
 	SetLocationByCityName("Berlin", Cities)
-	SetLocationByCityName("München", Cities)
 	SetDateAndLocation(2024, 8, 15, Cities["Berlin"].Lat, Cities["Berlin"].Lon)
-
-	response, err := http.Get(URL)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = json.Unmarshal(body, &today)
-	if err != nil {
-		log.Fatal(err)
-	}
-	data, err := json.MarshalIndent(today, "", "  ")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = saveJSONFile("resources", "weather.json", data)
-	if err != nil {
-		log.Fatal(err)
-	}
-	doEvery(10*time.Second, test)
+	RequestWeather()
+	ShowWeatherFromTime(today, time.Now())
+	SaveWeather() // Saves weather in weather.json
+	doEvery(30*time.Minute, ShowWeather)
 }
 
 func saveJSONFile(directory, filename string, data []byte) error {
@@ -203,17 +201,46 @@ func saveJSONFile(directory, filename string, data []byte) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	fmt.Println("File created or written!")
 	return nil
 }
 
-func test(time.Time) {
+func ShowWeather(time.Time) {
 	ShowWeatherFromTime(today, time.Now())
 }
 
 func doEvery(d time.Duration, f func(time.Time)) {
 	for x := range time.Tick(d) {
+		RequestWeather()
 		f(x)
+	}
+}
+
+func RequestWeather() {
+	response, err := http.Get(URL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = json.Unmarshal(body, &today)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func SaveWeather() {
+	data, err := json.MarshalIndent(today, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = saveJSONFile("resources", "weather.json", data)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
