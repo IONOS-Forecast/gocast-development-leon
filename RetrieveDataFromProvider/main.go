@@ -53,15 +53,16 @@ type Source struct {
 	Distance        float64 `json:"distance"`
 }
 
-type Cities struct {
-	city []City
-}
-
-type City struct {
+type OWCity struct {
 	Name    string  `json:"name"`
 	Lat     float64 `json:"lat"`
 	Lon     float64 `json:"lon"`
 	Country string  `json:"country"`
+}
+
+type City struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
 }
 
 var apiKey = "6fb9b01da8337245c3fbd5ac0dac4d62"
@@ -83,9 +84,9 @@ func SetDate(year, month, day int) {
 	}
 }
 
-func SetLocationByCityName(name string) {
-	var city Cities
-	resp, err := http.Get("http://api.openweathermap.org/geo/1.0/direct?q=" + name + "&limit=5&appid=" + apiKey)
+func SetLocationByCityName(name string, cities map[string]City) {
+	var owcities []OWCity
+	resp, err := http.Get("http://api.openweathermap.org/geo/1.0/direct?q=" + name + "&limit=1&appid=" + apiKey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,11 +96,27 @@ func SetLocationByCityName(name string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = json.Unmarshal(body, &city.city)
+	err = json.Unmarshal(body, &owcities)
 	if err != nil {
 		log.Fatal(err)
 	}
-	SetLocation(city.city[0].Lat, city.city[0].Lon)
+	var foundcity OWCity
+	for _, owcity := range owcities {
+		if owcity.Country == "DE" {
+			foundcity = owcity
+		}
+	}
+	cities[foundcity.Name] = City{Lat: foundcity.Lat, Lon: foundcity.Lon}
+	data, err := json.MarshalIndent(cities, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = saveJSONFile("cities.json", data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	//SetLocation(Cities[].Lat, Cities[0].Lon)
 }
 
 func SetLocation(Latitude float64, Longitude float64) {
@@ -125,6 +142,7 @@ func reloadURL() {
 	values := u.Query()
 	values.Set("lat", strconv.FormatFloat(latitude, 'f', 2, 64))
 	values.Set("lon", strconv.FormatFloat(longitude, 'f', 2, 64))
+	values.Set("lat", strconv.FormatFloat(latitude, 'f', 2, 64))
 	values.Set("date", date)
 	u.RawQuery = values.Encode()
 	URL = u.Redacted()
@@ -132,11 +150,14 @@ func reloadURL() {
 
 func ShowWeatherFromTime(day DayWeather, t time.Time) {
 	fmt.Println(day.Weather[t.Hour()])
+	// Make use of it later
 }
 
 func main() {
-	SetLocationByCityName("München")
-	SetDateAndLocation(2024, 8, 15, 52.5, 13.4)
+	Cities := make(map[string]City)
+	SetLocationByCityName("Berlin", Cities)
+	SetLocationByCityName("München", Cities)
+	SetDateAndLocation(2024, 8, 15, Cities["Berlin"].Lat, Cities["Berlin"].Lon)
 
 	var today DayWeather
 	response, err := http.Get(URL)
@@ -174,7 +195,7 @@ func saveJSONFile(filename string, data []byte) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	fmt.Println("File created!")
+	fmt.Println("File created or written!")
 	return nil
 }
 
