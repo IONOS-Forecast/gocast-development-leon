@@ -9,6 +9,8 @@ import (
 	"io"
 ) 
 
+// start: variables initialization
+
 type WeatherByHour struct {
 	TimeStamp                  time.Time  	 `json:"timestamp"`
 	SourceId			int      `json:"source_id"`
@@ -44,7 +46,30 @@ type Cityinfo struct {
 var citynumbers []Cityinfo
 var weather WeatherbyDay
 
+// end: variables initialization
 
+//function that takes city name as input and saves latitude/longitude in "citynumbers"
+func GetLatLong (city string){
+	
+	url := fmt.Sprintf("http://api.openweathermap.org/geo/1.0/direct?q=%s&limit=5&appid=2cab1704c3ad14814b44b266c13346a8",city)		//please dont get me banned
+	resp, err := http.Get(url)
+
+	if err != nil {
+		fmt.Println("error with sending the rquest to get the longitude/latitude")
+		return
+	}
+	
+	body, err := io.ReadAll(resp.Body)
+	
+	if err != nil {
+		fmt.Println("error with reading response body from longitude/latitude")
+		return
+	}
+	
+	err = json.Unmarshal(body, &citynumbers)
+}
+
+//function for checking the input. if theyre correct, it sends the variables to the next function
 func CheckArguments(year int, month int, day int, hour int, city string){
 
 switch{
@@ -67,26 +92,7 @@ SendRequest(year, month, day, hour, city)
 }
 }
 
-func GetLatLong (city string){
-	
-	url := fmt.Sprintf("http://api.openweathermap.org/geo/1.0/direct?q=%s&limit=5&appid=2cab1704c3ad14814b44b266c13346a8",city)		//please dont get me banned
-	resp, err := http.Get(url)
-
-	if err != nil {
-		fmt.Println("error with sending the rquest to get the longitude/latitude")
-		return
-	}
-	
-	body, err := io.ReadAll(resp.Body)
-	
-	if err != nil {
-		fmt.Println("error with reading response body from longitude/latitude")
-		return
-	}
-	
-	err = json.Unmarshal(body, &citynumbers)
-}
-
+//function that takes input from "CheckArguments" function and prints weather information
 func SendRequest(year int, month int, day int, hour int, city string) {
 	
 	url := fmt.Sprintf("https://api.brightsky.dev/weather?lat=%f&lon=%f&date=%.4d-%.2d-%.2d",citynumbers[0].Lat,citynumbers[0].Lon,year,month,day)
