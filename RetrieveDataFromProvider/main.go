@@ -95,6 +95,7 @@ func SetLocationByCityName(name string, cities map[string]City) {
 }
 
 func ReadCities(cities map[string]City) map[string]City {
+	// Implement a check if the file below exists!
 	file, err := os.Open("resources/cities.json")
 	if err != nil {
 		log.Fatal(err)
