@@ -55,13 +55,15 @@ type Cityinfo struct {
 	Lon				float64	 `json:lon`
 }
 
+var citynumbers []Cityinfo
+var weather WeatherbyDay
+
 
 func CheckArguments(year int, month int, day int, hour int, city string){
 
 switch{
 
 case year < 2010 || year > 2024:
-
 fmt.Println("check year input")
 return
 
@@ -71,6 +73,7 @@ return
 
 case day < 1 || day > 31:
 fmt.Println("check day input")
+return
 
 //case lat < -90 || lat > 90:
 //fmt.Println("check latitude input")
@@ -83,42 +86,41 @@ SendRequest(year, month, day, hour, city)
 }
 }
 
+func GetLatLong (city string){
+	
+	url := fmt.Sprintf("http://api.openweathermap.org/geo/1.0/direct?q=%s&limit=5&appid=2cab1704c3ad14814b44b266c13346a8",city)		//please dont get me banned
+	resp, err := http.Get(url)
+
+	if err != nil {
+		fmt.Println("error with sending the rquest to get the longitude/latitude")
+		return
+	}
+	
+	body, err := io.ReadAll(resp.Body)
+	
+	if err != nil {
+		fmt.Println("error with reading response body from longitude/latitude")
+		return
+	}
+	
+	err = json.Unmarshal(body, &citynumbers)
+
+}
+
 func SendRequest(year int, month int, day int, hour int, city string) {
-
-
-	var citynumbers []Cityinfo
-	
-	url1 := fmt.Sprintf("http://api.openweathermap.org/geo/1.0/direct?q=%s&limit=5&appid=2cab1704c3ad14814b44b266c13346a8",city)
-	resp1, err1 := http.Get(url1)
-	
-	if err1 != nil {
-		fmt.Println("error with sending the rquest")
-		return
-	}
-	
-	body1, err1 := io.ReadAll(resp1.Body)
-	
-	if err1 != nil {
-		fmt.Println("error with reading response body")
-		return
-	}
-	
-	err1 = json.Unmarshal(body1, &citynumbers)
-
-	var weather WeatherbyDay
 	
 	url := fmt.Sprintf("https://api.brightsky.dev/weather?lat=%f&lon=%f&date=%.4d-%.2d-%.2d",citynumbers[0].Lat,citynumbers[0].Lon,year,month,day)
 	resp, err := http.Get(url)
 
 	if err != nil {
-		fmt.Println("error with sending the rquest")
+		fmt.Println("error with sending the rquest for weather")
 		return
 	}
 
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		fmt.Println("error with reading response body")
+		fmt.Println("error with reading response body for weather")
 		return
 	}
 
@@ -135,7 +137,13 @@ func SendRequest(year int, month int, day int, hour int, city string) {
 
 func main() {
 
-	//year ,month, day, latitude, longitude, hour. example: 2020,4,21,52,7.6,0
-	CheckArguments(2024,8,14,2, "koethen")
+	var city string = "berlin"	// city name
+	var year int	= 2024		// year
+	var month int 	= 8		// month
+	var day int 	= 14		// day
+	var hour int	= 2		// hour
+	
+	GetLatLong(city)
+	CheckArguments(year, month, day, hour, city)
 }
 
