@@ -53,11 +53,23 @@ type Source struct {
 	Distance        float64 `json:"distance"`
 }
 
+type Cities struct {
+	city []City
+}
+
+type City struct {
+	Name    string  `json:"name"`
+	Lat     float64 `json:"lat"`
+	Lon     float64 `json:"lon"`
+	Country string  `json:"country"`
+}
+
+var apiKey = "6fb9b01da8337245c3fbd5ac0dac4d62"
 var URL = "https://api.brightsky.dev/weather?lat=52&lon=7.6&date=2020-04-21"
 var _url = "https://api.brightsky.dev/weather?"
 var date = "2020-04-21"
-var latitude float64 = 52
-var longitude float64 = 7.6
+var latitude float64 = 52.5
+var longitude float64 = 13.4
 
 // Date Format year-month-day
 func SetDate(year, month, day int) {
@@ -69,6 +81,25 @@ func SetDate(year, month, day int) {
 		date = time.Now().Format(layout)
 		// Make a message in app for user: "Incorrect Date" (something like that)
 	}
+}
+
+func SetLocationByCityName(name string) {
+	var city Cities
+	resp, err := http.Get("http://api.openweathermap.org/geo/1.0/direct?q=" + name + "&limit=5&appid=" + apiKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = json.Unmarshal(body, &city.city)
+	if err != nil {
+		log.Fatal(err)
+	}
+	SetLocation(city.city[0].Lat, city.city[0].Lon)
 }
 
 func SetLocation(Latitude float64, Longitude float64) {
@@ -95,12 +126,8 @@ func reloadURL() {
 	values.Set("lat", strconv.FormatFloat(latitude, 'f', 2, 64))
 	values.Set("lon", strconv.FormatFloat(longitude, 'f', 2, 64))
 	values.Set("date", date)
-	fmt.Println(u.Query())
-	fmt.Println(u.Redacted())
 	u.RawQuery = values.Encode()
 	URL = u.Redacted()
-	fmt.Println(u.Query())
-	fmt.Println(u.Redacted())
 }
 
 func ShowWeatherFromTime(day DayWeather, t time.Time) {
@@ -108,7 +135,8 @@ func ShowWeatherFromTime(day DayWeather, t time.Time) {
 }
 
 func main() {
-	SetDateAndLocation(2025, 10, 5, 54, 14)
+	SetLocationByCityName("München")
+	SetDateAndLocation(2024, 8, 15, 52.5, 13.4)
 
 	var today DayWeather
 	response, err := http.Get(URL)
@@ -125,12 +153,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	/*mdata, err := json.MarshalIndent(today, "", "  ")
+	/*data, err := json.MarshalIndent(today, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = saveJSONFile("weather.json", mdata)
+	err = saveJSONFile("weather.json", data)
 	if err != nil {
 		log.Fatal(err)
 	}*/
