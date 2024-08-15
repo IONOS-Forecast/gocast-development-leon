@@ -16,19 +16,19 @@ type WeatherByHour struct {
 	SourceId			int      `json:"source_id"`
 	Precipitation			float64  `json:"precipitation"`
 	PressureMsl			float64  `json:"pressure_msl"`
-	SunShine			float64  `json:"sunshine"`
-	Temprature			int      `json:"tempreture"`
+	Sunshine			float64  `json:"sunshine"`
+	Temperature			float64  `json:"temperature"`
 	WindDirection			int      `json:"wind_direction"`
 	WindSpeed			float64  `json:"wind_speed"`
 	CloudCover			int      `json:"cloud_cover"`
 	DewPoint			float64  `json:"dew_point"`
-	RelaiveHumidity			int      `json:"relative_humidity"`
+	RelativeHumidity		int      `json:"relative_humidity"`
 	Visibility			int      `json:"visibility"`
 	WindGustDirection		int      `json:"wind_gust_direction"`
 	WindGustSpeed			float64  `json:"wind_gust_speed"`
 	Condition			string   `json:"condition"`
-	PrecipitationProbability	*float64 `json:"precipitation_probability"`
-	PrecipitationProbability6h	*float64 `json:"precipitation_probability_6h"`
+	PrecipitationProbability	float64 `json:"precipitation_probability"`
+	PrecipitationProbability6h	float64 `json:"precipitation_probability_6h"`
 	Solar				float64  `json:"solar"`
 	Icon				string   `json:"icon"`
 }
@@ -70,7 +70,7 @@ func GetLatLong (city string){
 }
 
 //function for checking the input. if theyre correct, it sends the variables to the next function
-func CheckArguments(year int, month int, day int, hour int, city string){
+func CheckArguments(year int, month int, day int, hour int){
 
 switch{
 
@@ -87,13 +87,13 @@ fmt.Println("check day input")
 return
 
 default:
-SendRequest(year, month, day, hour, city)
+SendRequest(year, month, day, hour)
 
 }
 }
 
 //function that takes input from "CheckArguments" function and prints weather information
-func SendRequest(year int, month int, day int, hour int, city string) {
+func SendRequest(year int, month int, day int, hour int) {
 	
 	url := fmt.Sprintf("https://api.brightsky.dev/weather?lat=%f&lon=%f&date=%.4d-%.2d-%.2d",citynumbers[0].Lat,citynumbers[0].Lon,year,month,day)
 	resp, err := http.Get(url)
@@ -117,7 +117,31 @@ func SendRequest(year int, month int, day int, hour int, city string) {
 		return
 	}
 	
-	fmt.Println(weather.WeatherByHours[hour])
+	PrintWeather(year, month, day, hour)
+
+}
+
+//function that takes input from "SendRequest" and prints weather data
+func PrintWeather(year int, month int, day int, hour int){
+
+fmt.Printf("time:					%.16v\n",weather.WeatherByHours[hour].TimeStamp)
+fmt.Printf("condition:				%s\n",weather.WeatherByHours[hour].Condition)
+fmt.Printf("temperature:				%.1f\n",weather.WeatherByHours[hour].Temperature)
+fmt.Printf("wind speed:				%.1f\n",weather.WeatherByHours[hour].WindSpeed)
+fmt.Printf("wind direction:				%d\n",weather.WeatherByHours[hour].WindDirection)
+fmt.Printf("wind gust speed:			%.1f\n",weather.WeatherByHours[hour].WindGustSpeed)
+fmt.Printf("wind gust direction:			%d\n",weather.WeatherByHours[hour].WindGustDirection)
+fmt.Printf("relative humidity:			%d\n",weather.WeatherByHours[hour].RelativeHumidity)
+fmt.Printf("dew point:				%.1f\n",weather.WeatherByHours[hour].DewPoint)
+fmt.Printf("precipitation probability:		%.1f\n",weather.WeatherByHours[hour].PrecipitationProbability)
+fmt.Printf("precipitation probability 6h:		%.1f\n",weather.WeatherByHours[hour].PrecipitationProbability6h)
+fmt.Printf("visibility:				%d\n",weather.WeatherByHours[hour].Visibility)
+fmt.Printf("pressure in MSL:			%.1f\n",weather.WeatherByHours[hour].PressureMsl)
+fmt.Printf("cloud cover:				%d\n",weather.WeatherByHours[hour].CloudCover)
+fmt.Printf("sunshine:				%.0f\n",weather.WeatherByHours[hour].Sunshine)
+fmt.Printf("solar:					%.3f\n",weather.WeatherByHours[hour].Solar)
+fmt.Printf("general:				%s\n",weather.WeatherByHours[hour].Icon)
+fmt.Printf("precipitation:				%.1f\n",weather.WeatherByHours[hour].Precipitation)
 
 }
 
@@ -130,6 +154,6 @@ func main() {
 	var hour int	= 2		// hour
 	
 	GetLatLong(city)
-	CheckArguments(year, month, day, hour, city)
+	CheckArguments(year, month, day, hour)
 }
 
