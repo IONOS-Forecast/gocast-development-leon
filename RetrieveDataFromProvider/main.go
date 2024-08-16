@@ -68,8 +68,9 @@ type City struct {
 	Lon float64 `json:"lon"`
 }
 
+var weatherAPIURL string
+var geoAPIURL string
 var geoAPIKey string
-var URL string
 var date = "2020-04-21"
 var latitude float64 = 52.5
 var longitude float64 = 13.4
@@ -158,7 +159,7 @@ func SetDateAndLocation(year, month, day int, Latitude float64, Longitude float6
 }
 
 func reloadURL() {
-	u, err := url.Parse(URL)
+	u, err := url.Parse(weatherAPIURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -168,7 +169,7 @@ func reloadURL() {
 	values.Set("lat", strconv.FormatFloat(latitude, 'f', 2, 64))
 	values.Set("date", date)
 	u.RawQuery = values.Encode()
-	URL = u.Redacted()
+	weatherAPIURL = u.Redacted()
 }
 
 func ShowWeatherFromTime(day DayWeather, t time.Time) {
@@ -184,7 +185,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	URL = os.Getenv("WAPI")
+	weatherAPIURL = os.Getenv("WAPI_URL")
+	geoAPIURL = os.Getenv("GEOAPI_URL")
 	geoAPIKey = os.Getenv("GEOAPI_KEY")
 	minutesRequest, err = strconv.Atoi(os.Getenv("REQ_AFT_MIN"))
 	if err != nil {
