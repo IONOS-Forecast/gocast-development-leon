@@ -516,7 +516,7 @@
       "station_name": "Berlin-Kreuzberg",
       "wmo_station_id": "G543",
       "first_record": "2024-01-01T00:00:00+00:00",
-      "last_record": "2024-08-14T23:00:00+00:00",
+      "last_record": "2024-08-15T23:00:00+00:00",
       "distance": 360
     },
     {
@@ -542,7 +542,7 @@
       "station_name": "Berlin-Dahlem (FU)",
       "wmo_station_id": "10381",
       "first_record": "2010-01-01T00:00:00+00:00",
-      "last_record": "2024-08-14T23:00:00+00:00",
+      "last_record": "2024-08-15T23:00:00+00:00",
       "distance": 8425
     }
   ]

@@ -74,12 +74,13 @@ var geoAPIKey string
 var date = "2020-04-21"
 var latitude float64 = 52.5
 var longitude float64 = 13.4
+var selectedCity string
 
 // Date Format year-month-day
 func SetDate(year, month, day int) {
 	if month <= 12 && month >= 1 && year >= 2010 && year <= time.Now().Year() && day >= 0 && day <= 31 {
 		date = fmt.Sprintf("%d-02%d-02%d", year, month, day)
-		reloadURL()
+		reloadWEATHERAPIURL()
 	} else {
 		layout := "2006-01-02"
 		date = time.Now().Format(layout)
@@ -93,6 +94,7 @@ func SetLocationByCityName(name string, cities map[string]City) {
 		fmt.Println("City:", city)
 	} else { // When the city doesn't exist
 		SaveCityByName(name, cities)
+		SetLocationByCityName(name, cities)
 	}
 }
 
@@ -110,8 +112,11 @@ func ReadCities(cities map[string]City) map[string]City {
 }
 
 func SaveCityByName(name string, cities map[string]City) {
+	selectedCity = name
+	reloadGEOAPIURL()
 	var owcities []OWCity
-	resp, err := http.Get("http://api.openweathermap.org/geo/1.0/direct?q=" + name + "&limit=1&appid=" + geoAPIKey)
+	resp, err := http.Get(geoAPIURL)
+	fmt.Println(geoAPIURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,7 +152,7 @@ func SetLocation(Latitude float64, Longitude float64) {
 	if Latitude <= 54 && Latitude >= 48 && Longitude <= 14 && Longitude >= 6 {
 		latitude = Latitude
 		longitude = Longitude
-		reloadURL()
+		reloadWEATHERAPIURL()
 	} else {
 		// Make a message in app for user: "Not in range" (something like that)
 	}
@@ -158,7 +163,7 @@ func SetDateAndLocation(year, month, day int, Latitude float64, Longitude float6
 	SetLocation(Latitude, Longitude)
 }
 
-func reloadURL() {
+func reloadWEATHERAPIURL() {
 	u, err := url.Parse(weatherAPIURL)
 	if err != nil {
 		log.Fatal(err)
@@ -170,6 +175,19 @@ func reloadURL() {
 	values.Set("date", date)
 	u.RawQuery = values.Encode()
 	weatherAPIURL = u.Redacted()
+}
+
+func reloadGEOAPIURL() {
+	u, err := url.Parse(geoAPIURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	values := u.Query()
+	fmt.Println(u.Query())
+	values.Set("q", selectedCity)
+	values.Set("appid", geoAPIKey)
+	u.RawQuery = values.Encode()
+	geoAPIURL = u.Redacted()
 }
 
 func ShowWeatherFromTime(day DayWeather, t time.Time) {
@@ -194,6 +212,7 @@ func main() {
 	}
 	Cities := make(map[string]City)         // Defines the Variable Cities
 	SetLocationByCityName("Berlin", Cities) // Sets Location by the city name for the active Weather Request
+	SetLocationByCityName("Munich", Cities) // Sets Location by the city name for the active Weather Request
 	SetDate(2024, 8, 15)                    // Sets Date for the active Weather Request
 	RequestWeather()                        // Requests Weather from the API
 	ShowWeatherFromTime(today, time.Now())  // Prints weather to terminal
