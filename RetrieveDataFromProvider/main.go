@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type DayWeather struct {
@@ -66,9 +68,8 @@ type City struct {
 	Lon float64 `json:"lon"`
 }
 
-var apiKey = "6fb9b01da8337245c3fbd5ac0dac4d62"
-var URL = "https://api.brightsky.dev/weather?lat=52&lon=7.6&date=2020-04-21"
-var _url = "https://api.brightsky.dev/weather?"
+var geoAPIKey string
+var URL string
 var date = "2020-04-21"
 var latitude float64 = 52.5
 var longitude float64 = 13.4
@@ -109,7 +110,7 @@ func ReadCities(cities map[string]City) map[string]City {
 
 func SaveCityByName(name string, cities map[string]City) {
 	var owcities []OWCity
-	resp, err := http.Get("http://api.openweathermap.org/geo/1.0/direct?q=" + name + "&limit=1&appid=" + apiKey)
+	resp, err := http.Get("http://api.openweathermap.org/geo/1.0/direct?q=" + name + "&limit=1&appid=" + geoAPIKey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -178,13 +179,24 @@ func ShowWeatherFromTime(day DayWeather, t time.Time) {
 var today DayWeather
 
 func main() {
-	Cities := make(map[string]City)
-	SetLocationByCityName("Berlin", Cities)
-	SetDateAndLocation(2024, 8, 15, Cities["Berlin"].Lat, Cities["Berlin"].Lon)
-	RequestWeather()
-	ShowWeatherFromTime(today, time.Now())
-	SaveWeather() // Saves weather in weather.json
-	doEvery(30*time.Minute, ShowWeather)
+	var minutesRequest int
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+	URL = os.Getenv("WAPI")
+	geoAPIKey = os.Getenv("GEOAPI_KEY")
+	minutesRequest, err = strconv.Atoi(os.Getenv("REQ_AFT_MIN"))
+	if err != nil {
+		panic(err)
+	}
+	Cities := make(map[string]City)         // Defines the Variable Cities
+	SetLocationByCityName("Berlin", Cities) // Sets Location by the city name for the active Weather Request
+	SetDate(2024, 8, 15)                    // Sets Date for the active Weather Request
+	RequestWeather()                        // Requests Weather from the API
+	ShowWeatherFromTime(today, time.Now())  // Prints weather to terminal
+	SaveWeather()                           // Saves weather in weather.json
+	RequestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), ShowWeather)
 }
 
 func saveJSONFile(directory, filename string, data []byte) error {
@@ -209,7 +221,7 @@ func ShowWeather(time.Time) {
 	ShowWeatherFromTime(today, time.Now())
 }
 
-func doEvery(d time.Duration, f func(time.Time)) {
+func RequestWeatherEvery(d time.Duration, f func(time.Time)) {
 	for x := range time.Tick(d) {
 		RequestWeather()
 		f(x)
