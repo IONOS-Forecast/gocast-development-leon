@@ -231,7 +231,7 @@ func RequestWeatherEvery(d time.Duration, f func(time.Time)) {
 }
 
 func RequestWeather() {
-	response, err := http.Get(URL)
+	response, err := http.Get(weatherAPIURL)
 	if err != nil {
 		log.Fatal(err)
 	}
