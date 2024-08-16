@@ -89,7 +89,7 @@ func SetDate(year, month, day int) {
 }
 
 func SetLocationByCityName(name string, cities map[string]City) {
-	cities = ReadCities(cities)
+	cities = ReadCities(name, cities)
 	if city, exists := cities[strings.ToLower(name)]; exists { // When the city exists
 		fmt.Println("City:", city)
 	} else { // When the city doesn't exist
@@ -98,11 +98,11 @@ func SetLocationByCityName(name string, cities map[string]City) {
 	}
 }
 
-func ReadCities(cities map[string]City) map[string]City {
+func ReadCities(name string, cities map[string]City) map[string]City {
 	// Implement a check if the file below exists!
 	file, err := os.Open("resources/cities.json")
 	if err != nil {
-		log.Fatal(err)
+		SaveCityByName(name, cities)
 	}
 	defer file.Close()
 
@@ -116,7 +116,6 @@ func SaveCityByName(name string, cities map[string]City) {
 	reloadGEOAPIURL()
 	var owcities []OWCity
 	resp, err := http.Get(geoAPIURL)
-	fmt.Println(geoAPIURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -183,7 +182,6 @@ func reloadGEOAPIURL() {
 		log.Fatal(err)
 	}
 	values := u.Query()
-	fmt.Println(u.Query())
 	values.Set("q", selectedCity)
 	values.Set("appid", geoAPIKey)
 	u.RawQuery = values.Encode()
