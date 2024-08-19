@@ -210,7 +210,6 @@ func main() {
 	}
 	Cities := make(map[string]City)         // Defines the Variable Cities
 	SetLocationByCityName("Berlin", Cities) // Sets Location by the city name for the active Weather Request
-	SetLocationByCityName("Munich", Cities) // Sets Location by the city name for the active Weather Request
 	SetDate(2024, 8, 15)                    // Sets Date for the active Weather Request
 	RequestWeather()                        // Requests Weather from the API
 	ShowWeatherFromTime(today, time.Now())  // Prints weather to terminal
