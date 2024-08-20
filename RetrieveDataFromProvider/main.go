@@ -27,9 +27,9 @@ var today DayWeather
 var opts options
 
 type options struct {
-	WeatherAPIURL string `long:"weather-api-url" env:"WEATHER_API_URL" description:"URL to interact with Weather provider"`
-	GeoAPIURL     string `long:"geo-api-url" env:"GEO_API_URL" description:"URL to interact with GEO provider"`
-	GeoAPIKEY     string `long:"geo-api-key" env:"GEO_API_KEY" description:"KEY to interact with GEO provider"`
+	WeatherAPIURL string `v:"vapiurl" long:"weather-api-url" env:"WEATHER_API_URL" description:"URL to interact with Weather provider"`
+	GeoAPIURL     string `v:"gapiurl" long:"geo-api-url" env:"GEO_API_URL" description:"URL to interact with GEO provider"`
+	GeoAPIKEY     string `v:"gapikey" long:"geo-api-key" env:"GEO_API_KEY" description:"KEY to interact with GEO provider"`
 }
 
 type DayWeather struct {
