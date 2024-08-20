@@ -86,7 +86,6 @@ func setDate(year, month, day int) {
 	_date := fmt.Sprintf("%v-%.2v-%.2v", year, month, day)
 	_, err := checkDate(_date)
 	if err != nil { // What happens when date is invalid
-		// TODO: Throw error at user
 		date = now.Format("2006-01-02")
 		fmt.Println("Error: The date is invalid!")
 	}
@@ -94,7 +93,6 @@ func setDate(year, month, day int) {
 		date = _date
 	} else { // What happens when the date is out of range
 		date = now.Format("2006-01-02")
-		// TODO: Throw error at user
 		fmt.Println("Error: The given date is out of range.")
 	}
 	reloadWeatherURL()
@@ -106,7 +104,7 @@ func setLocation(lat, lon float64) {
 		longitude = lon
 		reloadWeatherURL()
 	} else { // When location is not in range
-		// Throw error at user
+		fmt.Println("Error: The location is not in germany or not in range!")
 	}
 }
 
@@ -117,7 +115,6 @@ func setLocationByCityName(name string, cities map[string]City) {
 	} else { // When the city doesn't exist
 		saveCityByName(name, cities)
 		setLocationByCityName(name, cities)
-		// Maybe throw error
 	}
 }
 
