@@ -30,7 +30,7 @@ type options struct {
 	WeatherAPIURL  string `v:"wapiurl" long:"weather-api-url" env:"WEATHER_API_URL" description:"URL to interact with Weather provider"`
 	GeoAPIURL      string `v:"gapiurl" long:"geo-api-url" env:"GEO_API_URL" description:"URL to interact with GEO provider"`
 	GeoAPIKEY      string `v:"gapikey" long:"geo-api-key" env:"GEO_API_KEY" description:"KEY to interact with GEO provider"`
-	MinutesRequest string `v:"min-req" long:"minutes-request" env:"REQ_AFT_MIN" description:"Minutes until the next request to the Weather provicer is made"`
+	MinutesRequest string `v:"reqmin" long:"req-aft-min" env:"REQ_AFT_MIN" description:"Minutes until the next request to the Weather provicer is made"`
 }
 
 type DayWeather struct {
