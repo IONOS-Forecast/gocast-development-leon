@@ -2,3 +2,4 @@
 /Dev
 .env.dev
 COPY
+.vscode
