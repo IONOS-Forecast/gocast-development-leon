@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS cities
+(
+    name TEXT PRIMARY KEY,
+    lat REAL NOT NULL,
+    lon REAL NOT NULL
+);
