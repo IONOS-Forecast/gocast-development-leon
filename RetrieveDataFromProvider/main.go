@@ -23,7 +23,7 @@ var latitude = 52.5170365
 var longitude = 13.3888599
 var date string
 var cityName string
-var today DayWeather
+var today WeatherRecord
 var opts options
 
 type options struct {
@@ -33,11 +33,11 @@ type options struct {
 	MinutesRequest string `v:"reqmin" long:"req-aft-min" env:"REQ_AFT_MIN" description:"Minutes until the next request to the Weather provicer is made"`
 }
 
-type DayWeather struct {
-	Hours []HourWeather `json:"weather"`
+type WeatherRecord struct {
+	Hours []HourWeatherRecord `json:"weather"`
 }
 
-type HourWeather struct {
+type HourWeatherRecord struct {
 	TimeStamp                  string  `json:"timestamp"`
 	SourceID                   int     `json:"source_id"`
 	Precipitation              float64 `json:"precipitation"`
