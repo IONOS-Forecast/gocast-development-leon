@@ -4,8 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"testutil"
-
+	"github.com/IONOS-Forecast/gocast-development-leon/RetrieveDataFromProvider/pkg/testutil"
 	"github.com/go-pg/pg/v10"
 	_ "github.com/lib/pq"
 )
@@ -55,7 +54,10 @@ func TestMain(m *testing.M) {
 		Database: "forecast_test",
 	}
 	os.Exit(func() int {
-		container := testutil.StartProgresContainer(opts)
+		container := testutil.StartPostgresContainer(opts)
 		opts.Addr = container.Addr
+		dbOpts = opts
+		defer container.Shutdown()
+		return m.Run()
 	}())
 }
