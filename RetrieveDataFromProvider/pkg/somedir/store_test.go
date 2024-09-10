@@ -3,9 +3,11 @@ package somedir
 import (
 	"os"
 	"testing"
+
+	"testutil"
+
 	"github.com/go-pg/pg/v10"
 	_ "github.com/lib/pq"
-	"./testutil/db.go"
 )
 
 func TestDB(t *testing.T) {
@@ -47,10 +49,10 @@ var dbOpts pg.Options
 
 func TestMain(m *testing.M) {
 	opts := pg.Options{
-		Addr: "127.0.0.1:5432",
-		User:  "forecast",
+		Addr:     "127.0.0.1:5432",
+		User:     "forecast",
 		Password: "forecast",
-		Database: "forecast_test"
+		Database: "forecast_test",
 	}
 	os.Exit(func() int {
 		container := testutil.StartProgresContainer(opts)
