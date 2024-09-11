@@ -355,5 +355,5 @@ func setFutureDay(date string, count string) (string, string) {
 TODO:
 -	Change log.Fatalf
 	and give back error
-
+-	Retrieve Data From DB
 */
