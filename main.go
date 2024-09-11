@@ -24,6 +24,7 @@ var longitude = 13.3888599
 var date string
 var cityName string
 var today WeatherRecord
+var notToday WeatherRecord
 var opts options
 
 type options struct {
@@ -111,6 +112,7 @@ func setLocation(lat, lon float64) {
 func setLocationByCityName(name string, cities map[string]City) {
 	cities = readCities(name, cities)
 	if city, exists := cities[strings.ToLower(name)]; exists { // When the city exists
+		cityName = name
 		setLocation(city.Lat, city.Lon)
 	} else { // When the city doesn't exist
 		saveCityByName(name, cities)
@@ -204,19 +206,15 @@ func main() {
 	weatherAPIURL = opts.WeatherAPIURL
 	geoAPIURL = opts.GeoAPIURL
 	geoAPIKey = opts.GeoAPIKEY
-	minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
+	//minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
-	setDateAndLocationByCityName(2024, 8, 20, "Berlin", cities)
+	setDateAndLocationByCityName(2024, 9, 11, "Berlin", cities)
 	requestWeather()
-	saveWeather()
 	fmt.Println(today.Hours[time.Now().Hour()])
-	setDateAndLocation(2024, 8, 20, 48.1361079, 11.5753822)
-	requestWeather()
-	saveWeather()
-	fmt.Println(today.Hours[time.Now().Hour()])
-	requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)
+	saveFutureWeatherInFile(cityName, date)
+	//requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)
 }
 
 func showWeather(time.Time) {
@@ -273,14 +271,89 @@ func requestWeather() {
 	}
 }
 
-func saveWeather() {
+func requestFutureWeather() {
+	resp, err := http.Get(weatherAPIURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = json.Unmarshal(body, &notToday)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func saveFutureWeather(city string, count string) {
+	data, err := json.MarshalIndent(notToday, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = saveJSONFile("resources/weather_records", strings.ToLower(city)+"_"+count+"-orig.json", data)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func saveTodaysWeather(city string, count string) {
 	data, err := json.MarshalIndent(today, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = saveJSONFile("resources/json-data", "weather.json", data)
+	err = saveJSONFile("resources/weather_records", strings.ToLower(city)+"_"+count+"-orig.json", data)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
+
+func saveFutureWeatherInFile(city string, date string) {
+	count := "0"
+	requestWeather()
+	saveTodaysWeather(city, count)
+	newDate, count := setFutureDay(date, count) // Create the first next day
+	requestFutureWeather()
+	saveFutureWeather(city, count)
+	for i := 1; i <= 6; i++ { // Create for the next 6 days after the first
+		newDate, count = setFutureDay(newDate, count)
+		requestFutureWeather()
+		saveFutureWeather(city, count)
+	}
+}
+
+func setFutureDay(date string, count string) (string, string) {
+	splitDate := strings.Split(date, "-")
+	day, err := strconv.Atoi(splitDate[2])
+	if err != nil {
+		log.Fatalf("Couldn't convert Day: %v", err)
+	}
+	day += 1
+	month, err := strconv.Atoi(splitDate[1])
+	if err != nil {
+		log.Fatalf("Couldn't convert Month: %v", err)
+	}
+	year, err := strconv.Atoi(splitDate[0])
+	if err != nil {
+		log.Fatalf("Couldn't convert Year: %v", err)
+	}
+	_count, err := strconv.Atoi(count)
+	if err != nil {
+		log.Fatalf("Couldn't convert Counter: %v", err)
+	}
+	_count += 1
+	count = strconv.Itoa(_count)
+	setDate(year, month, day)
+	return fmt.Sprintf("%v-%.2v-%.2v", year, month, day), count
+}
+
+/*
+TODO:
+-	Change log.Fatalf
+	and give back error
+
+*/
