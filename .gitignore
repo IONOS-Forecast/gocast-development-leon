@@ -1,6 +1,2 @@
 .env
-/Dev
 .env.dev
-COPY
-.vscode
-./CodeGenerator
