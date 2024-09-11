@@ -34,5 +34,3 @@ CREATE TABLE IF NOT EXISTS weather_records
 
 COPY cities(name, lat, lon) FROM '/usr/pgdata/cities.csv' WITH CSV;
 COPY weather_records(timestamp, source_id, precipitation, pressure_msl, sunshine, temperature, wind_direction, wind_speed, cloud_cover, dew_point, relative_humidity, visibility, wind_gust_direction, wind_gust_speed, condition, precipitation_probability, precipitation_probability_6h, solar, icon, city) FROM '/usr/pgdata/berlin.csv' WITH CSV;
-COPY weather_records(timestamp, source_id, precipitation, pressure_msl, sunshine, temperature, wind_direction, wind_speed, cloud_cover, dew_point, relative_humidity, visibility, wind_gust_direction, wind_gust_speed, condition, precipitation_probability, precipitation_probability_6h, solar, icon, city) FROM '/usr/pgdata/hamburg.csv' WITH CSV;
-COPY weather_records(timestamp, source_id, precipitation, pressure_msl, sunshine, temperature, wind_direction, wind_speed, cloud_cover, dew_point, relative_humidity, visibility, wind_gust_direction, wind_gust_speed, condition, precipitation_probability, precipitation_probability_6h, solar, icon, city) FROM '/usr/pgdata/munich.csv' WITH CSV;
