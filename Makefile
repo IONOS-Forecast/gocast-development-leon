@@ -1,3 +1,5 @@
+.PHONY: startdb
+
 startdb:
 	@docker run -d --rm \
 			--volume "./resources/pg/init/init.sql:/docker-entrypoint-initdb.d/init.sql" \
@@ -11,5 +13,7 @@ startdb:
 stopdb:
 	@docker stop forecastDB || exit 0
 
-run-test: startdb
+run-test:
 	go run main.go
+	./scripts/convert.sh
+	sudo make startdb
