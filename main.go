@@ -119,7 +119,7 @@ func setLocationByCityName(name string, cities map[string]City) {
 }
 
 func readCities(name string, cities map[string]City) map[string]City {
-	file, err := os.Open("resources/cities.json")
+	file, err := os.Open("resources/json-data/cities.json")
 	if err != nil {
 		saveCityByName(name, cities)
 	}
@@ -162,7 +162,7 @@ func saveCityByName(name string, cities map[string]City) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	saveJSONFile("resources", "cities.json", data)
+	saveJSONFile("resources/json-data", "cities.json", data)
 	return foundcity.Name
 }
 
@@ -279,7 +279,7 @@ func saveWeather() {
 		log.Fatal(err)
 	}
 
-	err = saveJSONFile("resources", "weather.json", data)
+	err = saveJSONFile("resources/json-data", "weather.json", data)
 	if err != nil {
 		log.Fatal(err)
 	}
