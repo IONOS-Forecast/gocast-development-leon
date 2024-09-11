@@ -10,3 +10,6 @@ startdb:
 
 stopdb:
 	@docker stop forecastDB || exit 0
+
+run-test: startdb
+	go run main.go
