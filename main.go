@@ -221,14 +221,17 @@ func main() {
 	FDB_DB = opts.FDB_DATABASE
 	FDB_ADDRESS = opts.FDB_ADDRESS
 	now := time.Now()
+	//setDateAndLocationByCityName(now.Year(), int(now.Month()), now.Day(), "Berlin", cities)
 	if date == "" {
 		setDate(now.Year(), int(now.Month()), now.Day())
 	}
 	if cityName == "" {
 		setLocationByCityName("Berlin", cities)
 	}
+	requestWeather()
+	saveFutureWeatherInFile(cityName, date)
 	connectToDatabase()
-	minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
+	//minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -236,23 +239,18 @@ func main() {
 		saveFutureWeatherInFile(cityName, date)
 	}
 	showWeather(now)
-	err = requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)
 }
 
 func showWeather(time.Time) {
 	fmt.Println(today.Hours[time.Now().Hour()])
 }
 
-func requestWeatherEvery(d time.Duration, f func(time.Time)) error {
-	var err error
+func requestWeatherEvery(d time.Duration, f func(time.Time)) {
 	for x := range time.Tick(d) {
-		err = requestWeather()
+		requestWeather()
 		f(x)
 	}
-	return err
 }
 
 func checkDate(s string) (time.Time, error) {
@@ -281,23 +279,21 @@ func saveJSONFile(directory, filename string, data []byte) error {
 	return nil
 }
 
-func requestWeather() error {
-	var err error
+func requestWeather() {
 	resp, err := http.Get(weatherAPIURL)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	err = json.Unmarshal(body, &today)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
-	return nil
 }
 
 func requestFutureWeather() {
@@ -388,7 +384,10 @@ func connectToDatabase() {
 		Database: FDB_DB,
 	})
 	defer db.Close()
-	getWeatherForDay()
+	err := getWeatherForDay()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func getHourWeatherRecord(day WeatherRecord, hour int, db *pg.DB) {
@@ -415,9 +414,6 @@ func getHourWeatherRecord(day WeatherRecord, hour int, db *pg.DB) {
 	queryDatabase(&solar, "solar", hour, db)
 	queryDatabase(&icon, "icon", hour, db)
 	queryDatabase(&city, "city", hour, db)
-	/*fmt.Println("Hour:", hour, "Weather-Data From Database:", timestamp, source_id, precipitation, pressuemsl, sunshine, temperature, wind_direction, wind_speed, cloud_cover,
-	dew_point, relative_humidity, visibility, wind_gust_direction, wind_gust_speed, condition, precipitation_probability,
-	precipitation_probability_6h, solar, icon, city)*/
 	day.Hours[hour].TimeStamp = timestamp
 	day.Hours[hour].SourceID = source_id
 	day.Hours[hour].Precipitation = precipitation
@@ -464,5 +460,4 @@ func getWeatherForDay() error {
 TODO:
 -	Change log.Fatalf
 	and give back error
--	Retrieve Data From DB
 */
