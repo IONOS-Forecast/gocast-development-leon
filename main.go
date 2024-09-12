@@ -228,7 +228,7 @@ func main() {
 		setLocationByCityName("Berlin", cities)
 	}
 	connectToDatabase()
-	//minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
+	minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -236,18 +236,23 @@ func main() {
 		saveFutureWeatherInFile(cityName, date)
 	}
 	showWeather(now)
-	//requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)
+	err = requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func showWeather(time.Time) {
 	fmt.Println(today.Hours[time.Now().Hour()])
 }
 
-func requestWeatherEvery(d time.Duration, f func(time.Time)) {
+func requestWeatherEvery(d time.Duration, f func(time.Time)) error {
+	var err error
 	for x := range time.Tick(d) {
-		requestWeather()
+		err = requestWeather()
 		f(x)
 	}
+	return err
 }
 
 func checkDate(s string) (time.Time, error) {
@@ -276,21 +281,23 @@ func saveJSONFile(directory, filename string, data []byte) error {
 	return nil
 }
 
-func requestWeather() {
+func requestWeather() error {
+	var err error
 	resp, err := http.Get(weatherAPIURL)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	err = json.Unmarshal(body, &today)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }
 
 func requestFutureWeather() {
