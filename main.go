@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -221,25 +222,21 @@ func main() {
 	FDB_DB = opts.FDB_DATABASE
 	FDB_ADDRESS = opts.FDB_ADDRESS
 	now := time.Now()
-	if date == "" {
-		setDate(now.Year(), int(now.Month()), now.Day())
-	}
+	setDate(now.Year(), int(now.Month()), now.Day())
 	if cityName == "" {
 		setLocationByCityName("Berlin", cities)
 	}
-	requestWeather()
-	saveFutureWeatherInFile(cityName, date)
+	if !(pathExists("resources/weather_records/berlin")) {
+		fmt.Println("INFO: Weather records don't exist! Getting new weather records from API Server.")
+		requestWeather()
+		saveFutureWeatherInFile(cityName, date)
+	}
 	connectToDatabase()
-	showWeather(now)
 	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
 	requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)*/
-}
-
-func showWeather(time.Time) {
-	fmt.Println(today.Hours[time.Now().Hour()])
 }
 
 func requestWeatherEvery(d time.Duration, f func(time.Time)) {
@@ -337,7 +334,8 @@ func saveFutureWeatherInFile(city string, date string) {
 	count := "0"
 	requestWeather()
 	saveTodaysWeather(city, count)
-	newDate, count := setFutureDay(date, count) // Create the first next day
+	newDate := date
+	newDate, count = setFutureDay(newDate, count) // Create the first next day
 	requestFutureWeather()
 	saveFutureWeather(city, count)
 	for i := 1; i <= 6; i++ { // Create for the next 6 days after the first
@@ -345,6 +343,8 @@ func saveFutureWeatherInFile(city string, date string) {
 		requestFutureWeather()
 		saveFutureWeather(city, count)
 	}
+	year, month, day := splitDate(date)
+	setDate(year, month, day)
 }
 
 func setFutureDay(date string, count string) (string, string) {
@@ -372,6 +372,24 @@ func setFutureDay(date string, count string) (string, string) {
 	return fmt.Sprintf("%v-%.2v-%.2v", year, month, day), count
 }
 
+func splitDate(date string) (year, month, day int) {
+	splitDate := strings.Split(date, "-")
+	day, err := strconv.Atoi(splitDate[2])
+	if err != nil {
+		log.Fatalf("Couldn't convert Day: %v", err)
+	}
+	day += 1
+	month, err = strconv.Atoi(splitDate[1])
+	if err != nil {
+		log.Fatalf("Couldn't convert Month: %v", err)
+	}
+	year, err = strconv.Atoi(splitDate[0])
+	if err != nil {
+		log.Fatalf("Couldn't convert Year: %v", err)
+	}
+	return year, month, day
+}
+
 func connectToDatabase() {
 	db = pg.Connect(&pg.Options{
 		Addr:     FDB_ADDRESS,
@@ -380,9 +398,11 @@ func connectToDatabase() {
 		Database: FDB_DB,
 	})
 	defer db.Close()
-	err := getWeatherForDay()
-	if err != nil {
-		log.Fatal(err)
+	var day WeatherRecord
+	var hours = [25]HourWeatherRecord{}
+	day.Hours = hours[:]
+	for i := 0; i <= 24; i++ {
+		getHourWeatherRecord(day, i, db)
 	}
 }
 
@@ -429,10 +449,13 @@ func getHourWeatherRecord(day WeatherRecord, hour int, db *pg.DB) {
 	day.Hours[hour].PrecipitationProbability6h = precipitation_probability_6h
 	day.Hours[hour].Solar = solar
 	day.Hours[hour].Icon = icon
+	today.Hours = day.Hours
+	today = day
 }
 
 func queryDatabase(t interface{}, value string, hour int, db *pg.DB) (interface{}, error) {
-	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='2024-09-11 %.2v:00:00+00'", value, hour)
+	year, month, day := splitDate(date)
+	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='%v-%.2v-%.2v %.2v:00:00+00'", value, year, month, day, hour)
 	_, err := db.Query(pg.Scan(&t), query)
 	if err != nil {
 		fmt.Println(err)
@@ -441,13 +464,15 @@ func queryDatabase(t interface{}, value string, hour int, db *pg.DB) (interface{
 	return t, nil
 }
 
-func getWeatherForDay() error {
-	var day WeatherRecord
-	var hours = [25]HourWeatherRecord{}
-	day.Hours = hours[:]
-	for i := 0; i <= 24; i++ {
-		getHourWeatherRecord(day, i, db)
+func pathExists(path string) bool {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return false
 	}
-	today = day
-	return nil
+	return true
 }
+
+/*
+TODO:
+-	Change log.Fatalf
+	and give back error
+*/
