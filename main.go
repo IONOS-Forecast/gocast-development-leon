@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-pg/pg/v10"
 	"github.com/jessevdk/go-flags"
 	"github.com/joho/godotenv"
 )
@@ -19,6 +20,10 @@ import (
 var weatherAPIURL string
 var geoAPIURL string
 var geoAPIKey string
+var FDB_USER string
+var FDB_PASS string
+var FDB_DB string
+var FDB_ADDRESS string
 var latitude = 52.5170365
 var longitude = 13.3888599
 var date string
@@ -26,12 +31,17 @@ var cityName string
 var today WeatherRecord
 var notToday WeatherRecord
 var opts options
+var db *pg.DB
 
 type options struct {
 	WeatherAPIURL  string `v:"wapiurl" long:"weather-api-url" env:"WEATHER_API_URL" description:"URL to interact with Weather provider"`
 	GeoAPIURL      string `v:"gapiurl" long:"geo-api-url" env:"GEO_API_URL" description:"URL to interact with GEO provider"`
 	GeoAPIKEY      string `v:"gapikey" long:"geo-api-key" env:"GEO_API_KEY" description:"KEY to interact with GEO provider"`
 	MinutesRequest string `v:"reqmin" long:"req-aft-min" env:"REQ_AFT_MIN" description:"Minutes until the next request to the Weather provicer is made"`
+	FDB_USER       string `v:"fdb-u" long:"fdb-user" env:"FDB_USER" description:"The user that connects to the forecast-database"`
+	FDB_PASSWORD   string `v:"fdb-p" long:"fdb_password" env:"FDB_PASSWORD" description:"The password to the user for connecting to the forecast-database"`
+	FDB_DATABASE   string `v:"fdb-db" long:"fdb_database" env:"FDB_DATABASE" description:"The database that the user connects to"`
+	FDB_ADDRESS    string `v:"fdb-addr" long:"fdb_address" env:"FDB_ADDRESS" description:"The address of the database"`
 }
 
 type WeatherRecord struct {
@@ -47,7 +57,7 @@ type HourWeatherRecord struct {
 	Temperature                float64 `json:"temperature"`
 	WindDirection              int     `json:"wind_direction"`
 	WindSpeed                  float64 `json:"wind_speed"`
-	CloudCover                 int     `json:"cloud_cover"`
+	CloudCover                 float64 `json:"cloud_cover"`
 	DewPoint                   float64 `json:"dew_point"`
 	RelativeHumidity           int     `json:"relative_humidity"`
 	Visibility                 int     `json:"visibility"`
@@ -206,14 +216,26 @@ func main() {
 	weatherAPIURL = opts.WeatherAPIURL
 	geoAPIURL = opts.GeoAPIURL
 	geoAPIKey = opts.GeoAPIKEY
+	FDB_USER = opts.FDB_USER
+	FDB_PASS = opts.FDB_PASSWORD
+	FDB_DB = opts.FDB_DATABASE
+	FDB_ADDRESS = opts.FDB_ADDRESS
+	now := time.Now()
+	if date == "" {
+		setDate(now.Year(), int(now.Month()), now.Day())
+	}
+	if cityName == "" {
+		setLocationByCityName("Berlin", cities)
+	}
+	connectToDatabase()
 	//minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
-	setDateAndLocationByCityName(2024, 9, 11, "Berlin", cities)
-	requestWeather()
-	fmt.Println(today.Hours[time.Now().Hour()])
-	saveFutureWeatherInFile(cityName, date)
+	if date != now.Format("2006-01-02") {
+		saveFutureWeatherInFile(cityName, date)
+	}
+	showWeather(now)
 	//requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)
 }
 
@@ -349,6 +371,86 @@ func setFutureDay(date string, count string) (string, string) {
 	count = strconv.Itoa(_count)
 	setDate(year, month, day)
 	return fmt.Sprintf("%v-%.2v-%.2v", year, month, day), count
+}
+
+func connectToDatabase() {
+	db = pg.Connect(&pg.Options{
+		Addr:     FDB_ADDRESS,
+		User:     FDB_USER,
+		Password: FDB_PASS,
+		Database: FDB_DB,
+	})
+	defer db.Close()
+	getWeatherForDay()
+}
+
+func getHourWeatherRecord(day WeatherRecord, hour int, db *pg.DB) {
+	var city, timestamp, condition, icon string
+	var source_id, wind_direction, relative_humidity, visibility, wind_gust_direction int
+	var precipitation, pressuemsl, sunshine, temperature, wind_speed, cloud_cover, dew_point, wind_gust_speed, precipitation_probability, precipitation_probability_6h, solar float64
+	queryDatabase(&timestamp, "timestamp", hour, db)
+	queryDatabase(&source_id, "source_id", hour, db)
+	queryDatabase(&precipitation, "precipitation", hour, db)
+	queryDatabase(&pressuemsl, "pressure_msl", hour, db)
+	queryDatabase(&sunshine, "sunshine", hour, db)
+	queryDatabase(&temperature, "temperature", hour, db)
+	queryDatabase(&wind_direction, "wind_direction", hour, db)
+	queryDatabase(&wind_speed, "wind_speed", hour, db)
+	queryDatabase(&cloud_cover, "cloud_cover", hour, db)
+	queryDatabase(&dew_point, "dew_point", hour, db)
+	queryDatabase(&relative_humidity, "relative_humidity", hour, db)
+	queryDatabase(&visibility, "visibility", hour, db)
+	queryDatabase(&wind_gust_direction, "wind_gust_direction", hour, db)
+	queryDatabase(&wind_gust_speed, "wind_gust_speed", hour, db)
+	queryDatabase(&condition, "condition", hour, db)
+	queryDatabase(&precipitation_probability, "precipitation_probability", hour, db)
+	queryDatabase(&precipitation_probability_6h, "precipitation_probability_6h", hour, db)
+	queryDatabase(&solar, "solar", hour, db)
+	queryDatabase(&icon, "icon", hour, db)
+	queryDatabase(&city, "city", hour, db)
+	/*fmt.Println("Hour:", hour, "Weather-Data From Database:", timestamp, source_id, precipitation, pressuemsl, sunshine, temperature, wind_direction, wind_speed, cloud_cover,
+	dew_point, relative_humidity, visibility, wind_gust_direction, wind_gust_speed, condition, precipitation_probability,
+	precipitation_probability_6h, solar, icon, city)*/
+	day.Hours[hour].TimeStamp = timestamp
+	day.Hours[hour].SourceID = source_id
+	day.Hours[hour].Precipitation = precipitation
+	day.Hours[hour].PressureMSL = pressuemsl
+	day.Hours[hour].Sunshine = sunshine
+	day.Hours[hour].Temperature = temperature
+	day.Hours[hour].WindDirection = wind_direction
+	day.Hours[hour].WindSpeed = wind_speed
+	day.Hours[hour].CloudCover = cloud_cover
+	day.Hours[hour].DewPoint = dew_point
+	day.Hours[hour].RelativeHumidity = relative_humidity
+	day.Hours[hour].Visibility = visibility
+	day.Hours[hour].WindGustDirection = wind_gust_direction
+	day.Hours[hour].WindGustSpeed = wind_gust_speed
+	day.Hours[hour].Condition = condition
+	day.Hours[hour].PrecipitationProbability = precipitation_probability
+	day.Hours[hour].PrecipitationProbability6h = precipitation_probability_6h
+	day.Hours[hour].Solar = solar
+	day.Hours[hour].Icon = icon
+}
+
+func queryDatabase(t interface{}, value string, hour int, db *pg.DB) (interface{}, error) {
+	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='2024-09-11 %.2v:00:00+00'", value, hour)
+	_, err := db.Query(pg.Scan(&t), query)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return t, nil
+}
+
+func getWeatherForDay() error {
+	var day WeatherRecord
+	var hours = [25]HourWeatherRecord{}
+	day.Hours = hours[:]
+	for i := 0; i <= 24; i++ {
+		getHourWeatherRecord(day, i, db)
+	}
+	today = day
+	return nil
 }
 
 /*
