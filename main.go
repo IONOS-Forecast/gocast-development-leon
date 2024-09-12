@@ -221,7 +221,6 @@ func main() {
 	FDB_DB = opts.FDB_DATABASE
 	FDB_ADDRESS = opts.FDB_ADDRESS
 	now := time.Now()
-	//setDateAndLocationByCityName(now.Year(), int(now.Month()), now.Day(), "Berlin", cities)
 	if date == "" {
 		setDate(now.Year(), int(now.Month()), now.Day())
 	}
@@ -231,15 +230,12 @@ func main() {
 	requestWeather()
 	saveFutureWeatherInFile(cityName, date)
 	connectToDatabase()
-	//minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
+	showWeather(now)
+	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if date != now.Format("2006-01-02") {
-		saveFutureWeatherInFile(cityName, date)
-	}
-	showWeather(now)
-	//requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)
+	requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)*/
 }
 
 func showWeather(time.Time) {
@@ -455,9 +451,3 @@ func getWeatherForDay() error {
 	today = day
 	return nil
 }
-
-/*
-TODO:
--	Change log.Fatalf
-	and give back error
-*/
