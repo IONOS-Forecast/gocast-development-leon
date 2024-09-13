@@ -144,13 +144,14 @@ func readCities(name string, cities map[string]City) map[string]City {
 	file, err := os.Open("resources/data/cities.json")
 	if err != nil {
 		saveCityByName(name, cities)
+		return readCities(name, cities)
 	}
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&cities)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 	return cities
 }
@@ -188,7 +189,11 @@ func saveCityByName(name string, cities map[string]City) string {
 	saveFile(resourcesPath, "cities.json", data)
 	citiesPath := "resources/data/cities.txt"
 	if !pathExists(citiesPath) {
-		saveFile(resourcesPath, "cities.txt", nil)
+		var citiesData []byte
+		for _, v := range []byte(strings.ToLower(name)) {
+			citiesData = append(citiesData, v)
+		}
+		saveFile(resourcesPath, "cities.txt", citiesData)
 	} else {
 		file, err := os.Open(citiesPath)
 		if err != nil {
