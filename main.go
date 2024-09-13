@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -226,7 +227,7 @@ func main() {
 	if cityName == "" {
 		setLocationByCityName("Berlin", cities)
 	}
-	if !(pathExists("resources/weather_records/berlin")) {
+	if !(pathExists("resources/weather_records/")) {
 		fmt.Println("INFO: Weather records don't exist! Getting new weather records from API Server.")
 		requestWeather()
 		saveFutureWeatherInFile(cityName, date)
@@ -404,12 +405,14 @@ func connectToDatabase() {
 	for i := 0; i <= 24; i++ {
 		getHourWeatherRecord(day, i, db)
 	}
+	insertCityWeatherRecordsToTable(strings.ToLower(cityName), db)
 }
 
 func getHourWeatherRecord(day WeatherRecord, hour int, db *pg.DB) {
 	var city, timestamp, condition, icon string
 	var source_id, wind_direction, relative_humidity, visibility, wind_gust_direction int
-	var precipitation, pressuemsl, sunshine, temperature, wind_speed, cloud_cover, dew_point, wind_gust_speed, precipitation_probability, precipitation_probability_6h, solar float64
+	var precipitation, pressuemsl, sunshine, temperature, wind_speed, cloud_cover, dew_point,
+		wind_gust_speed, precipitation_probability, precipitation_probability_6h, solar float64
 	queryDatabase(&timestamp, "timestamp", hour, db)
 	queryDatabase(&source_id, "source_id", hour, db)
 	queryDatabase(&precipitation, "precipitation", hour, db)
@@ -469,6 +472,153 @@ func pathExists(path string) bool {
 		return false
 	}
 	return true
+}
+
+func insertCityWeatherRecordsToTable(city string, db *pg.DB) {
+	path := fmt.Sprintf("resources/pg/data/%v.csv", city)
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	csvReader := csv.NewReader(file)
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+	_, err = db.Exec(`CREATE TEMPORARY TABLE temp_weather_records (id int NOT NULL, timestamp TIMESTAMP, source_id INT, precipitation FLOAT, pressure_msl FLOAT, sunshine FLOAT, temperature FLOAT, wind_direction INT, wind_speed FLOAT, cloud_cover FLOAT, dew_point FLOAT, relative_humidity FLOAT, visibility FLOAT, wind_gust_direction INT, wind_gust_speed FLOAT, condition VARCHAR(100), precipitation_probability FLOAT, precipitation_probability_6h FLOAT, solar FLOAT, icon VARCHAR(100), city VARCHAR(100), PRIMARY KEY(ID));`)
+	if err != nil {
+		log.Fatal("Exec:", err)
+	}
+	var csvString []string
+	// GET Count of Data From DATABASE
+	var count int
+	_, err = db.Query(pg.Scan(&count), "SELECT COUNT(*) FROM weather_records")
+	if err != nil {
+		log.Fatal("Count FAILED!:", err)
+	}
+	//i :=
+	for _, inner := range records {
+		inner = append([]string{strconv.Itoa(count + 1)}, inner...)
+		csvString = append(csvString, strings.Join(inner, ","))
+		count++
+	}
+	csvData := strings.Join(csvString, "\n")
+	reader := strings.NewReader(csvData)
+	_, err = db.CopyFrom(reader, `COPY temp_weather_records FROM STDIN WITH CSV`)
+	if err != nil {
+		log.Fatal("CopyFrom:", err)
+	}
+
+	/*_, err = db.Exec(`DELETE FROM weather_records;`)
+	if err != nil {
+		log.Fatal("Exec-DELETEOLDDATA:", err)
+	}
+	fmt.Println("OLD Data Deleted!")*/
+
+	/* FOR DEBUGGING
+	TODO:
+	- Remove Later
+	var buf bytes.Buffer
+	_, err = db.CopyTo(&buf, `COPY wweather_records TO STDOUT WITH CSV`)
+	if err != nil {
+		log.Fatal("CopyTo:", err)
+	}
+	fmt.Println("BUF:", buf.String())*/
+
+	_, err = db.Exec("INSERT INTO weather_records\nSELECT * FROM temp_weather_records WHERE timestamp NOT IN (SELECT timestamp FROM weather_records)")
+	if err != nil {
+		log.Fatal("Exec-Overwrite:", err)
+	}
+	fmt.Println("Weather Data inserted into Table!")
+
+	//------------------------------------------------------------------------------
+
+	/*r := strings.NewReader(records[0][0])
+	_, err = db.CopyFrom(r, `\copy wweather_records FROM 'resources/pg/data/berlin.csv' WITH (FORMAT csv);`)
+	if err != nil {
+		log.Fatal("CopyFrom:", err)
+	}*/
+
+	/*var buf bytes.Buffer
+	_, err = db.CopyTo(&buf, `COPY wweather_records TO STDOUT WITH (FORMAT CSV, HEADER TRUE);`)
+	if err != nil {
+		log.Fatal("CopyTo:", err)
+	}
+	fmt.Println(buf.String())*/
+	/*var hour int
+	for i := 0; i <= 0; i++ {
+		var day WeatherRecord
+		var hourRecord string
+		if hour == 23 {
+			hour = 0
+		}
+		for n, rec := range records[i] {
+			if n != len(records[0])-1 {
+				hourRecord += rec + " "
+			} else {
+				hourRecord += rec
+			}
+		}
+		fmt.Println(hourRecord)
+		record := strings.Split(hourRecord, " ")
+		var city, timestamp, condition, icon string
+		var source_id, wind_direction, relative_humidity, visibility, wind_gust_direction int
+		var precipitation, pressuemsl, sunshine, temperature, wind_speed, cloud_cover, dew_point,
+			wind_gust_speed, precipitation_probability, precipitation_probability_6h, solar float64
+		timestamp = record[0]
+		source_id, err = strconv.Atoi(record[1])
+		if err != nil {
+			panic(err)
+		}
+		timestamp = record[2]
+		timestamp = record[3]
+		timestamp = record[4]
+		timestamp = record[5]
+		timestamp = record[6]
+		timestamp = record[7]
+		timestamp = record[8]
+		city = record[0]
+		day.Hours[hour].TimeStamp = timestamp
+		day.Hours[hour].SourceID = source_id
+		day.Hours[hour].Precipitation = precipitation
+		day.Hours[hour].PressureMSL = pressuemsl
+		day.Hours[hour].Sunshine = sunshine
+		day.Hours[hour].Temperature = temperature
+		day.Hours[hour].WindDirection = wind_direction
+		day.Hours[hour].WindSpeed = wind_speed
+		day.Hours[hour].CloudCover = cloud_cover
+		day.Hours[hour].DewPoint = dew_point
+		day.Hours[hour].RelativeHumidity = relative_humidity
+		day.Hours[hour].Visibility = visibility
+		day.Hours[hour].WindGustDirection = wind_gust_direction
+		day.Hours[hour].WindGustSpeed = wind_gust_speed
+		day.Hours[hour].Condition = condition
+		day.Hours[hour].PrecipitationProbability = precipitation_probability
+		day.Hours[hour].PrecipitationProbability6h = precipitation_probability_6h
+		day.Hours[hour].Solar = solar
+		day.Hours[hour].Icon = icon
+		cityName = city
+		hour++
+	}
+
+	//fmt.Println(records)
+	var hourRecord string
+	for n, rec := range records[0] {
+		if n != len(records[0])-1 {
+			hourRecord += rec + " "
+		} else {
+			hourRecord += rec
+		}
+	}
+	//fmt.Println(hourRecord)
+	record := strings.Split(hourRecord, " ")
+	//fmt.Println(record)
+	for i := 0; i <= len(record)-1; i++ {
+		//fmt.Println("------")
+		//fmt.Println(record[i])
+	}*/
 }
 
 /*
