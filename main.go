@@ -33,7 +33,7 @@ var cityName string
 var today WeatherRecord
 var notToday WeatherRecord
 var opts options
-var db *pg.DB
+var pgdb *pg.DB
 
 type options struct {
 	WeatherAPIURL  string `v:"wapiurl" long:"weather-api-url" env:"WEATHER_API_URL" description:"URL to interact with Weather provider"`
@@ -263,12 +263,12 @@ func main() {
 	if cityName == "" {
 		setLocationByCityName("Berlin", cities)
 	}
-	if !(pathExists("resources/weather_records/")) {
+	database := connectToDatabase()
+	if !weatherDataExists(now.Hour(), database) || !pathExists("resources/weather_records/berlin_0-orig.json") {
 		fmt.Println("INFO: Weather records don't exist! Getting new weather records from API Server.")
 		requestWeather()
 		saveFutureWeatherInFile(cityName, date)
 	}
-	database := connectToDatabase()
 	var day WeatherRecord
 	var hours = [25]HourWeatherRecord{}
 	day.Hours = hours[:]
@@ -379,15 +379,13 @@ func saveFutureWeatherInFile(city string, date string) {
 	requestWeather()
 	saveTodaysWeather(city, count)
 	newDate := date
-	newDate, count = setFutureDay(newDate, count) // Create the first next day
-	requestFutureWeather()
-	saveFutureWeather(city, count)
-	for i := 1; i <= 6; i++ { // Create for the next 6 days after the first
+	for i := 1; i <= 7; i++ { // Create for the next 6 days after the first
 		newDate, count = setFutureDay(newDate, count)
 		requestFutureWeather()
 		saveFutureWeather(city, count)
 	}
 	year, month, day := splitDate(date)
+	day += 1
 	setDate(year, month, day)
 }
 
@@ -422,7 +420,6 @@ func splitDate(date string) (year, month, day int) {
 	if err != nil {
 		log.Fatalf("Couldn't convert Day: %v", err)
 	}
-	day += 1
 	month, err = strconv.Atoi(splitDate[1])
 	if err != nil {
 		log.Fatalf("Couldn't convert Month: %v", err)
@@ -498,8 +495,7 @@ func queryDatabase(t interface{}, value string, hour int, db pg.DB) (interface{}
 	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='%v-%.2v-%.2v %.2v:00:00+00'", value, year, month, day, hour)
 	_, err := db.Query(pg.Scan(&t), query)
 	if err != nil {
-		fmt.Println(err)
-		return nil, err
+		log.Fatal(err)
 	}
 	return t, nil
 }
@@ -552,6 +548,16 @@ func insertCityWeatherRecordsToTable(city string, db pg.DB) {
 		log.Fatal("Exec-Overwrite:", err)
 	}
 	fmt.Println("Weather Data inserted into Table!")
+}
+
+func weatherDataExists(hour int, db pg.DB) bool {
+	var data string
+	queryDatabase(&data, "timestamp", hour, db)
+	timestamp := date + fmt.Sprintf(" %.2v:00:00+00", hour)
+	if strings.Contains(data, timestamp) {
+		return true
+	}
+	return false
 }
 
 /*
