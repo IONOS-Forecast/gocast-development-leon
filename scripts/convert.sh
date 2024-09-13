@@ -6,7 +6,7 @@ PROJECT_ROOT=$(realpath $(dirname "${BASH_SOURCE[0]}")/..)
 cities=()
 while IFS= read -r line || [[ -n "$line" ]]; do
     cities+=("$line")
-done < $(realpath $(dirname "${BASH_SOURCE[0]}")/cities.txt)
+done < $(realpath $(dirname "${BASH_SOURCE[0]}")/../resources/data/cities.txt)
 
 echo "Cities array contains: ${cities[@]}"
 
