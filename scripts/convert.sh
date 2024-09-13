@@ -2,7 +2,13 @@
 
 PROJECT_ROOT=$(realpath $(dirname "${BASH_SOURCE[0]}")/..)
 
-cities=("berlin")
+#cities=("berlin" "hamburg")
+cities=()
+while IFS= read -r line || [[ -n "$line" ]]; do
+    cities+=("$line")
+done < $(realpath $(dirname "${BASH_SOURCE[0]}")/cities.txt)
+
+echo "Cities array contains: ${cities[@]}"
 
 echo "removing existing weather records"
 for c in "${cities[@]}"; do
@@ -18,4 +24,3 @@ for c in "${cities[@]}"; do
   done;
   printf "%s" "$(< resources/pg/data/$c.csv)" > "resources/pg/data/$c".csv
 done;
-
