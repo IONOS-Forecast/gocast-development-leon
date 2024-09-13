@@ -51,25 +51,25 @@ type WeatherRecord struct {
 }
 
 type HourWeatherRecord struct {
-	TimeStamp                  string  `json:"timestamp"`
-	SourceID                   int     `json:"source_id"`
-	Precipitation              float64 `json:"precipitation"`
-	PressureMSL                float64 `json:"pressure_msl"`
-	Sunshine                   float64 `json:"sunshine"`
-	Temperature                float64 `json:"temperature"`
-	WindDirection              int     `json:"wind_direction"`
-	WindSpeed                  float64 `json:"wind_speed"`
-	CloudCover                 float64 `json:"cloud_cover"`
-	DewPoint                   float64 `json:"dew_point"`
-	RelativeHumidity           int     `json:"relative_humidity"`
-	Visibility                 int     `json:"visibility"`
-	WindGustDirection          int     `json:"wind_gust_direction"`
-	WindGustSpeed              float64 `json:"wind_gust_speed"`
-	Condition                  string  `json:"condition"`
-	PrecipitationProbability   float64 `json:"precipitation_probability"`
-	PrecipitationProbability6h float64 `json:"precipitation_probability_6h"`
-	Solar                      float64 `json:"solar"`
-	Icon                       string  `json:"icon"`
+	TimeStamp                  string  `json:"timestamp" pg:"timestamp"`
+	SourceID                   int     `json:"source_id" pg:"source_id"`
+	Precipitation              float64 `json:"precipitation" pg:"precipitation"`
+	PressureMSL                float64 `json:"pressure_msl" pg:"pressure_msl"`
+	Sunshine                   float64 `json:"sunshine" pg:"sunshine"`
+	Temperature                float64 `json:"temperature" pg:"temperature"`
+	WindDirection              int     `json:"wind_direction" pg:"wind_direction"`
+	WindSpeed                  float64 `json:"wind_speed" pg:"wind_speed"`
+	CloudCover                 float64 `json:"cloud_cover" pg:"cloud_cover"`
+	DewPoint                   float64 `json:"dew_point" pg:"dew_point"`
+	RelativeHumidity           int     `json:"relative_humidity" pg:"relative_humidity"`
+	Visibility                 int     `json:"visibility" pg:"visibility"`
+	WindGustDirection          int     `json:"wind_gust_direction" pg:"wind_gust_direction"`
+	WindGustSpeed              float64 `json:"wind_gust_speed" pg:"wind_gust_speed"`
+	Condition                  string  `json:"condition" pg:"condition"`
+	PrecipitationProbability   float64 `json:"precipitation_probability" pg:"precipitation_probability"`
+	PrecipitationProbability6h float64 `json:"precipitation_probability_6h" pg:"precipitation_probability_6h"`
+	Solar                      float64 `json:"solar" pg:"solar"`
+	Icon                       string  `json:"icon" pg:"icon"`
 }
 
 type OWCity struct {
@@ -131,14 +131,6 @@ func setLocationByCityName(name string, cities map[string]City) {
 		setLocationByCityName(name, cities)
 	}
 }
-
-/* ERROR Reference
-func myFunctionHasErrors() (string, error) {
-	abc, err := fuctionSomething()
-	if err != nil {
-		return "", fmt.Errorf("Error during bla bla %w", err)
-	}
-}*/
 
 func readCities(name string, cities map[string]City) map[string]City {
 	file, err := os.Open("resources/data/cities.json")
@@ -264,28 +256,29 @@ func main() {
 		setLocationByCityName("Berlin", cities)
 	}
 	database := connectToDatabase()
-	getWeatherRecord(now.Hour(), cityName, database)
+	defer database.Close()
+	getWeatherRecord(cityName, database)
 	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
 	requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)*/
+
 }
 
-func getWeatherRecord(hour int, city string, db pg.DB) {
+func getWeatherRecord(city string, db pg.DB) {
 	city = strings.ToLower(city)
-	if !weatherDataExists(hour, cityName, db) || !pathExists("resources/weather_records/berlin_0-orig.json") {
+	if !weatherDataExists(city, db) {
 		fmt.Println("INFO: Weather records don't exist! Getting new weather records from API Server.")
 		requestWeather()
 		saveFutureWeatherInFile(cityName, date)
+		insertCityWeatherRecordsToTable(city, db)
 	}
-	var day WeatherRecord
-	var hours = [25]HourWeatherRecord{}
-	day.Hours = hours[:]
-	for i := 0; i <= 24; i++ {
-		getHourWeatherRecord(day, i, city, db)
+	if !pathExists("resources/weather_records/berlin_0-orig.json") && weatherDataExists(city, db) {
+		fmt.Println("INFO: Weather records don't exist! Getting weather records from Database.")
+		getHourWeatherRecord(city, db)
 	}
-	insertCityWeatherRecordsToTable(city, db)
+	getHourWeatherRecord(city, db)
 }
 
 func requestWeatherEvery(d time.Duration, f func(time.Time)) {
@@ -447,62 +440,40 @@ func connectToDatabase() pg.DB {
 	return *db
 }
 
-func getHourWeatherRecord(day WeatherRecord, hour int, city string, db pg.DB) {
+func getHourWeatherRecord(city string, db pg.DB) {
 	city = strings.ToLower(city)
-	var timestamp, condition, icon string
-	var source_id, wind_direction, relative_humidity, visibility, wind_gust_direction int
-	var precipitation, pressuemsl, sunshine, temperature, wind_speed, cloud_cover, dew_point,
-		wind_gust_speed, precipitation_probability, precipitation_probability_6h, solar float64
-	queryDatabase(&timestamp, "timestamp", hour, city, db)
-	queryDatabase(&source_id, "source_id", hour, city, db)
-	queryDatabase(&precipitation, "precipitation", hour, city, db)
-	queryDatabase(&pressuemsl, "pressure_msl", hour, city, db)
-	queryDatabase(&sunshine, "sunshine", hour, city, db)
-	queryDatabase(&temperature, "temperature", hour, city, db)
-	queryDatabase(&wind_direction, "wind_direction", hour, city, db)
-	queryDatabase(&wind_speed, "wind_speed", hour, city, db)
-	queryDatabase(&cloud_cover, "cloud_cover", hour, city, db)
-	queryDatabase(&dew_point, "dew_point", hour, city, db)
-	queryDatabase(&relative_humidity, "relative_humidity", hour, city, db)
-	queryDatabase(&visibility, "visibility", hour, city, db)
-	queryDatabase(&wind_gust_direction, "wind_gust_direction", hour, city, db)
-	queryDatabase(&wind_gust_speed, "wind_gust_speed", hour, city, db)
-	queryDatabase(&condition, "condition", hour, city, db)
-	queryDatabase(&precipitation_probability, "precipitation_probability", hour, city, db)
-	queryDatabase(&precipitation_probability_6h, "precipitation_probability_6h", hour, city, db)
-	queryDatabase(&solar, "solar", hour, city, db)
-	queryDatabase(&icon, "icon", hour, city, db)
-	day.Hours[hour].TimeStamp = timestamp
-	day.Hours[hour].SourceID = source_id
-	day.Hours[hour].Precipitation = precipitation
-	day.Hours[hour].PressureMSL = pressuemsl
-	day.Hours[hour].Sunshine = sunshine
-	day.Hours[hour].Temperature = temperature
-	day.Hours[hour].WindDirection = wind_direction
-	day.Hours[hour].WindSpeed = wind_speed
-	day.Hours[hour].CloudCover = cloud_cover
-	day.Hours[hour].DewPoint = dew_point
-	day.Hours[hour].RelativeHumidity = relative_humidity
-	day.Hours[hour].Visibility = visibility
-	day.Hours[hour].WindGustDirection = wind_gust_direction
-	day.Hours[hour].WindGustSpeed = wind_gust_speed
-	day.Hours[hour].Condition = condition
-	day.Hours[hour].PrecipitationProbability = precipitation_probability
-	day.Hours[hour].PrecipitationProbability6h = precipitation_probability_6h
-	day.Hours[hour].Solar = solar
-	day.Hours[hour].Icon = icon
-	today.Hours = day.Hours
-	today = day
+	records, err := queryDayDatabase(city, db)
+	if err != nil {
+		panic(err)
+	}
+	today.Hours = records
 }
 
-func queryDatabase(t interface{}, value string, hour int, city string, db pg.DB) (interface{}, error) {
+func queryDayDatabase(city string, db pg.DB) ([]HourWeatherRecord, error) {
+	var res []HourWeatherRecord
+	year, month, day := splitDate(date)
+	query := fmt.Sprintf("timestamp::date='%v-%.2v-%.2v 00:00:00+00' AND city='%v'", year, month, day, city)
+	err := db.Model().Table("weather_records").
+		Column("timestamp", "source_id", "precipitation", "pressure_msl", "sunshine", "temperature",
+			"wind_direction", "wind_speed", "cloud_cover", "dew_point", "relative_humidity", "visibility",
+			"wind_gust_direction", "wind_gust_speed", "condition", "precipitation_probability",
+			"precipitation_probability_6h", "solar", "icon").
+		Where(query).
+		Select(&res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func queryDatabase(t any, value string, hour int, city string, db pg.DB) error {
 	year, month, day := splitDate(date)
 	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='%v-%.2v-%.2v %.2v:00:00+00' AND city='%v'", value, year, month, day, hour, city)
 	_, err := db.Query(pg.Scan(&t), query)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	return t, nil
+	return nil
 }
 
 func pathExists(path string) bool {
@@ -555,10 +526,11 @@ func insertCityWeatherRecordsToTable(city string, db pg.DB) {
 	fmt.Println("Weather Data inserted into Table!")
 }
 
-func weatherDataExists(hour int, city string, db pg.DB) bool {
+func weatherDataExists(city string, db pg.DB) bool {
+	now := time.Now()
 	var timestamp string
-	queryDatabase(&timestamp, "timestamp", hour, strings.ToLower(city), db)
-	timeString := date + fmt.Sprintf(" %.2v:00:00+00", hour)
+	queryDatabase(&timestamp, "timestamp", now.Hour(), strings.ToLower(city), db)
+	timeString := date + fmt.Sprintf(" %.2v:00:00+00", now.Hour())
 	if strings.Contains(timestamp, timeString) {
 		return true
 	}
