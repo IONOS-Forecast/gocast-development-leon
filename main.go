@@ -205,11 +205,13 @@ func saveCityByName(name string, cities map[string]City) string {
 			panic(err)
 		}
 		var citiesData []byte
-		citiesString := string(content) + "\n" + strings.ToLower(name)
-		for _, v := range []byte(citiesString) {
-			citiesData = append(citiesData, v)
+		if !strings.Contains(string(content), strings.ToLower(name)) {
+			citiesString := string(content) + "\n" + strings.ToLower(name)
+			for _, v := range []byte(citiesString) {
+				citiesData = append(citiesData, v)
+			}
+			saveFile("resources/data", "cities.txt", citiesData)
 		}
-		saveFile("resources/data", "cities.txt", citiesData)
 	}
 	return foundcity.Name
 }
@@ -274,7 +276,6 @@ func main() {
 		getHourWeatherRecord(day, i, database)
 	}
 	insertCityWeatherRecordsToTable(strings.ToLower(cityName), database)
-	saveCityByName("Hamburg", cities)
 	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
