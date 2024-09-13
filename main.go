@@ -132,8 +132,16 @@ func setLocationByCityName(name string, cities map[string]City) {
 	}
 }
 
+/* ERROR Reference
+func myFunctionHasErrors() (string, error) {
+	abc, err := fuctionSomething()
+	if err != nil {
+		return "", fmt.Errorf("Error during bla bla %w", err)
+	}
+}*/
+
 func readCities(name string, cities map[string]City) map[string]City {
-	file, err := os.Open("resources/json-data/cities.json")
+	file, err := os.Open("resources/data/cities.json")
 	if err != nil {
 		saveCityByName(name, cities)
 	}
@@ -176,7 +184,8 @@ func saveCityByName(name string, cities map[string]City) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	saveJSONFile("resources/json-data", "cities.json", data)
+
+	saveFile("resources/data", "cities.json", data)
 	return foundcity.Name
 }
 
@@ -232,7 +241,14 @@ func main() {
 		requestWeather()
 		saveFutureWeatherInFile(cityName, date)
 	}
-	connectToDatabase()
+	database := connectToDatabase()
+	var day WeatherRecord
+	var hours = [25]HourWeatherRecord{}
+	day.Hours = hours[:]
+	for i := 0; i <= 24; i++ {
+		getHourWeatherRecord(day, i, database)
+	}
+	insertCityWeatherRecordsToTable(strings.ToLower(cityName), database)
 	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
@@ -255,7 +271,7 @@ func checkDate(s string) (time.Time, error) {
 	return date, nil
 }
 
-func saveJSONFile(directory, filename string, data []byte) error {
+func saveFile(directory, filename string, data []byte) error {
 	err := os.MkdirAll(directory, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("%w", err)
@@ -313,7 +329,7 @@ func saveFutureWeather(city string, count string) {
 		log.Fatal(err)
 	}
 
-	err = saveJSONFile("resources/weather_records", strings.ToLower(city)+"_"+count+"-orig.json", data)
+	err = saveFile("resources/weather_records", strings.ToLower(city)+"_"+count+"-orig.json", data)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -325,7 +341,7 @@ func saveTodaysWeather(city string, count string) {
 		log.Fatal(err)
 	}
 
-	err = saveJSONFile("resources/weather_records", strings.ToLower(city)+"_"+count+"-orig.json", data)
+	err = saveFile("resources/weather_records", strings.ToLower(city)+"_"+count+"-orig.json", data)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -391,24 +407,18 @@ func splitDate(date string) (year, month, day int) {
 	return year, month, day
 }
 
-func connectToDatabase() {
-	db = pg.Connect(&pg.Options{
+func connectToDatabase() pg.DB {
+	db := pg.Connect(&pg.Options{
 		Addr:     FDB_ADDRESS,
 		User:     FDB_USER,
 		Password: FDB_PASS,
 		Database: FDB_DB,
 	})
-	defer db.Close()
-	var day WeatherRecord
-	var hours = [25]HourWeatherRecord{}
-	day.Hours = hours[:]
-	for i := 0; i <= 24; i++ {
-		getHourWeatherRecord(day, i, db)
-	}
-	insertCityWeatherRecordsToTable(strings.ToLower(cityName), db)
+
+	return *db
 }
 
-func getHourWeatherRecord(day WeatherRecord, hour int, db *pg.DB) {
+func getHourWeatherRecord(day WeatherRecord, hour int, db pg.DB) {
 	var city, timestamp, condition, icon string
 	var source_id, wind_direction, relative_humidity, visibility, wind_gust_direction int
 	var precipitation, pressuemsl, sunshine, temperature, wind_speed, cloud_cover, dew_point,
@@ -456,7 +466,7 @@ func getHourWeatherRecord(day WeatherRecord, hour int, db *pg.DB) {
 	today = day
 }
 
-func queryDatabase(t interface{}, value string, hour int, db *pg.DB) (interface{}, error) {
+func queryDatabase(t interface{}, value string, hour int, db pg.DB) (interface{}, error) {
 	year, month, day := splitDate(date)
 	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='%v-%.2v-%.2v %.2v:00:00+00'", value, year, month, day, hour)
 	_, err := db.Query(pg.Scan(&t), query)
@@ -474,7 +484,7 @@ func pathExists(path string) bool {
 	return true
 }
 
-func insertCityWeatherRecordsToTable(city string, db *pg.DB) {
+func insertCityWeatherRecordsToTable(city string, db pg.DB) {
 	path := fmt.Sprintf("resources/pg/data/%v.csv", city)
 	file, err := os.Open(path)
 	if err != nil {
@@ -521,4 +531,5 @@ func insertCityWeatherRecordsToTable(city string, db *pg.DB) {
 TODO:
 -	Change log.Fatalf
 	and give back error
+-	Implement closing the connection
 */
