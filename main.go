@@ -264,7 +264,17 @@ func main() {
 		setLocationByCityName("Berlin", cities)
 	}
 	database := connectToDatabase()
-	if !weatherDataExists(now.Hour(), database) || !pathExists("resources/weather_records/berlin_0-orig.json") {
+	getWeatherRecord(now.Hour(), cityName, database)
+	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
+	if err != nil {
+		log.Fatal(err)
+	}
+	requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)*/
+}
+
+func getWeatherRecord(hour int, city string, db pg.DB) {
+	city = strings.ToLower(city)
+	if !weatherDataExists(hour, cityName, db) || !pathExists("resources/weather_records/berlin_0-orig.json") {
 		fmt.Println("INFO: Weather records don't exist! Getting new weather records from API Server.")
 		requestWeather()
 		saveFutureWeatherInFile(cityName, date)
@@ -273,14 +283,9 @@ func main() {
 	var hours = [25]HourWeatherRecord{}
 	day.Hours = hours[:]
 	for i := 0; i <= 24; i++ {
-		getHourWeatherRecord(day, i, database)
+		getHourWeatherRecord(day, i, city, db)
 	}
-	insertCityWeatherRecordsToTable(strings.ToLower(cityName), database)
-	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
-	if err != nil {
-		log.Fatal(err)
-	}
-	requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)*/
+	insertCityWeatherRecordsToTable(city, db)
 }
 
 func requestWeatherEvery(d time.Duration, f func(time.Time)) {
@@ -442,31 +447,31 @@ func connectToDatabase() pg.DB {
 	return *db
 }
 
-func getHourWeatherRecord(day WeatherRecord, hour int, db pg.DB) {
-	var city, timestamp, condition, icon string
+func getHourWeatherRecord(day WeatherRecord, hour int, city string, db pg.DB) {
+	city = strings.ToLower(city)
+	var timestamp, condition, icon string
 	var source_id, wind_direction, relative_humidity, visibility, wind_gust_direction int
 	var precipitation, pressuemsl, sunshine, temperature, wind_speed, cloud_cover, dew_point,
 		wind_gust_speed, precipitation_probability, precipitation_probability_6h, solar float64
-	queryDatabase(&timestamp, "timestamp", hour, db)
-	queryDatabase(&source_id, "source_id", hour, db)
-	queryDatabase(&precipitation, "precipitation", hour, db)
-	queryDatabase(&pressuemsl, "pressure_msl", hour, db)
-	queryDatabase(&sunshine, "sunshine", hour, db)
-	queryDatabase(&temperature, "temperature", hour, db)
-	queryDatabase(&wind_direction, "wind_direction", hour, db)
-	queryDatabase(&wind_speed, "wind_speed", hour, db)
-	queryDatabase(&cloud_cover, "cloud_cover", hour, db)
-	queryDatabase(&dew_point, "dew_point", hour, db)
-	queryDatabase(&relative_humidity, "relative_humidity", hour, db)
-	queryDatabase(&visibility, "visibility", hour, db)
-	queryDatabase(&wind_gust_direction, "wind_gust_direction", hour, db)
-	queryDatabase(&wind_gust_speed, "wind_gust_speed", hour, db)
-	queryDatabase(&condition, "condition", hour, db)
-	queryDatabase(&precipitation_probability, "precipitation_probability", hour, db)
-	queryDatabase(&precipitation_probability_6h, "precipitation_probability_6h", hour, db)
-	queryDatabase(&solar, "solar", hour, db)
-	queryDatabase(&icon, "icon", hour, db)
-	queryDatabase(&city, "city", hour, db)
+	queryDatabase(&timestamp, "timestamp", hour, city, db)
+	queryDatabase(&source_id, "source_id", hour, city, db)
+	queryDatabase(&precipitation, "precipitation", hour, city, db)
+	queryDatabase(&pressuemsl, "pressure_msl", hour, city, db)
+	queryDatabase(&sunshine, "sunshine", hour, city, db)
+	queryDatabase(&temperature, "temperature", hour, city, db)
+	queryDatabase(&wind_direction, "wind_direction", hour, city, db)
+	queryDatabase(&wind_speed, "wind_speed", hour, city, db)
+	queryDatabase(&cloud_cover, "cloud_cover", hour, city, db)
+	queryDatabase(&dew_point, "dew_point", hour, city, db)
+	queryDatabase(&relative_humidity, "relative_humidity", hour, city, db)
+	queryDatabase(&visibility, "visibility", hour, city, db)
+	queryDatabase(&wind_gust_direction, "wind_gust_direction", hour, city, db)
+	queryDatabase(&wind_gust_speed, "wind_gust_speed", hour, city, db)
+	queryDatabase(&condition, "condition", hour, city, db)
+	queryDatabase(&precipitation_probability, "precipitation_probability", hour, city, db)
+	queryDatabase(&precipitation_probability_6h, "precipitation_probability_6h", hour, city, db)
+	queryDatabase(&solar, "solar", hour, city, db)
+	queryDatabase(&icon, "icon", hour, city, db)
 	day.Hours[hour].TimeStamp = timestamp
 	day.Hours[hour].SourceID = source_id
 	day.Hours[hour].Precipitation = precipitation
@@ -490,9 +495,9 @@ func getHourWeatherRecord(day WeatherRecord, hour int, db pg.DB) {
 	today = day
 }
 
-func queryDatabase(t interface{}, value string, hour int, db pg.DB) (interface{}, error) {
+func queryDatabase(t interface{}, value string, hour int, city string, db pg.DB) (interface{}, error) {
 	year, month, day := splitDate(date)
-	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='%v-%.2v-%.2v %.2v:00:00+00'", value, year, month, day, hour)
+	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='%v-%.2v-%.2v %.2v:00:00+00' AND city='%v'", value, year, month, day, hour, city)
 	_, err := db.Query(pg.Scan(&t), query)
 	if err != nil {
 		log.Fatal(err)
@@ -550,11 +555,11 @@ func insertCityWeatherRecordsToTable(city string, db pg.DB) {
 	fmt.Println("Weather Data inserted into Table!")
 }
 
-func weatherDataExists(hour int, db pg.DB) bool {
-	var data string
-	queryDatabase(&data, "timestamp", hour, db)
-	timestamp := date + fmt.Sprintf(" %.2v:00:00+00", hour)
-	if strings.Contains(data, timestamp) {
+func weatherDataExists(hour int, city string, db pg.DB) bool {
+	var timestamp string
+	queryDatabase(&timestamp, "timestamp", hour, strings.ToLower(city), db)
+	timeString := date + fmt.Sprintf(" %.2v:00:00+00", hour)
+	if strings.Contains(timestamp, timeString) {
 		return true
 	}
 	return false
