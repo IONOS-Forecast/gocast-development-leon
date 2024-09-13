@@ -184,8 +184,28 @@ func saveCityByName(name string, cities map[string]City) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	saveFile("resources/data", "cities.json", data)
+	resourcesPath := "resources/data"
+	saveFile(resourcesPath, "cities.json", data)
+	citiesPath := "resources/data/cities.txt"
+	if !pathExists(citiesPath) {
+		saveFile(resourcesPath, "cities.txt", nil)
+	} else {
+		file, err := os.Open(citiesPath)
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
+		content, err := os.ReadFile(citiesPath)
+		if err != nil {
+			panic(err)
+		}
+		var citiesData []byte
+		citiesString := string(content) + "\n" + strings.ToLower(name)
+		for _, v := range []byte(citiesString) {
+			citiesData = append(citiesData, v)
+		}
+		saveFile("resources/data", "cities.txt", citiesData)
+	}
 	return foundcity.Name
 }
 
@@ -249,6 +269,7 @@ func main() {
 		getHourWeatherRecord(day, i, database)
 	}
 	insertCityWeatherRecordsToTable(strings.ToLower(cityName), database)
+	saveCityByName("Hamburg", cities)
 	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
