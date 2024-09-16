@@ -1,4 +1,4 @@
-package somedir
+package db
 
 import (
 	"os"
