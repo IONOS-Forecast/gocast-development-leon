@@ -541,5 +541,4 @@ func weatherDataExists(city string, db pg.DB) bool {
 TODO:
 -	Change log.Fatalf
 	and give back error
--	Implement closing the connection
 */
