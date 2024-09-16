@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	db "github.com/IONOS-Forecast/gocast-development-leon/RetrieveDataFromProvider/pkg/db"
 	"github.com/go-pg/pg/v10"
 	"github.com/jessevdk/go-flags"
 	"github.com/joho/godotenv"
@@ -311,9 +312,9 @@ func main() {
 			log.Print(err)
 		}
 	}
-	//database := connectToDatabase()
-	//defer database.Close()
-	//err = getWeatherRecord(cityName, database)
+	database := db.ConnectToDatabase(fdbAddress, fdbUser, fdbPass, fdbDB)
+	defer database.Close()
+	err = getWeatherRecord(cityName, database)
 	if err != nil {
 		log.Print(err)
 	}
@@ -322,7 +323,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	//err = getWeatherRecord(cityName, database)
+	err = getWeatherRecord(cityName, database)
 	if err != nil {
 		log.Print(err)
 	}
