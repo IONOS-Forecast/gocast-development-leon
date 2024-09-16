@@ -672,9 +672,3 @@ func weatherDataExists(city string, db pg.DB) (bool, error) {
 	}
 	return false, nil
 }
-
-/*
-TODO:
--	Change log.Fatalf
-	and give back error
-*/
