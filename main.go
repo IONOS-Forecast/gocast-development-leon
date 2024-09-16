@@ -84,51 +84,84 @@ type City struct {
 	Lon float64 `json:"lon"`
 }
 
-func setDateAndLocationByCityName(year, month, day int, cityName string, cities map[string]City) {
-	setDate(year, month, day)
-	setLocationByCityName(cityName, cities)
+func setDateAndLocationByCityName(year, month, day int, cityName string, cities map[string]City) error {
+	err := setDate(year, month, day)
+	if err != nil {
+		return err
+	}
+	err = setLocationByCityName(cityName, cities)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func setDateAndLocation(year, month, day int, lat, lon float64) {
-	setDate(year, month, day)
-	setLocation(lat, lon)
+func setDateAndLocation(year, month, day int, lat, lon float64) error {
+	err := setDate(year, month, day)
+	if err != nil {
+		return err
+	}
+	err = setLocation(lat, lon)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func setDate(year, month, day int) {
+func setDate(year, month, day int) error {
 	now := time.Now()
 	_date := fmt.Sprintf("%v-%.2v-%.2v", year, month, day)
 	_, err := checkDate(_date)
 	if err != nil { // What happens when date is invalid
 		date = now.Format("2006-01-02")
-		fmt.Println("Error: The date is invalid!")
+		return fmt.Errorf("ERROR: The date \"%v\" is invalid!\nWARNING: Date set to today (\"%v\")", _date, date)
 	}
 	if year >= 2010 && year <= now.Year() && month >= 1 && month <= 12 && day >= 1 && day <= 31 {
 		date = _date
 	} else { // What happens when the date is out of range
 		date = now.Format("2006-01-02")
-		fmt.Println("Error: The given date is out of range.")
+		return fmt.Errorf("ERROR: The given date \"%v\" is out of range.\nWARNING: Date set to today (\"%v\")\n", _date, date)
 	}
-	reloadWeatherURL()
+	err = reloadWeatherURL()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func setLocation(lat, lon float64) {
+func setLocation(lat, lon float64) error {
 	if lat <= 54 && lat >= 48 && lon <= 14 && lon >= 6 {
 		latitude = lat
 		longitude = lon
-		reloadWeatherURL()
+		err := reloadWeatherURL()
+		if err != nil {
+			return err
+		}
+		return nil
 	} else { // When location is not in range
-		fmt.Println("Error: The location is not in germany or not in range!")
+		return fmt.Errorf("ERROR: The location \"Lat:%f; Lon:%f\" is not in germany or not in range!", lat, lon)
 	}
 }
 
-func setLocationByCityName(name string, cities map[string]City) {
+func setLocationByCityName(name string, cities map[string]City) error {
 	cities = readCities(name, cities)
 	if city, exists := cities[strings.ToLower(name)]; exists { // When the city exists
 		cityName = name
-		setLocation(city.Lat, city.Lon)
+		err := setLocation(city.Lat, city.Lon)
+		if err != nil {
+			return err
+		}
+		return nil
 	} else { // When the city doesn't exist
-		saveCityByName(name, cities)
-		setLocationByCityName(name, cities)
+		_, err := saveCityByName(name, cities)
+		if err != nil {
+			return err
+		}
+		err = setLocationByCityName(name, cities)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("INFO: City \"%v\" doesn't exist!\nINFO: Getting city \"%v\" from API!", strings.ToLower(name), strings.ToLower(name))
 	}
 }
 
@@ -148,23 +181,30 @@ func readCities(name string, cities map[string]City) map[string]City {
 	return cities
 }
 
-func saveCityByName(name string, cities map[string]City) string {
+func saveCityByName(name string, cities map[string]City) (string, error) {
+	oldCityName := cityName
 	cityName = name
-	reloadGeoURL()
+	err := reloadGeoURL()
+	if err != nil {
+		return "", err
+	}
 	var owcities []OWCity
 	resp, err := http.Get(geoAPIURL)
 	if err != nil {
-		log.Fatal(err)
+		cityName = oldCityName
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		cityName = oldCityName
+		return "", err
 	}
 	err = json.Unmarshal(body, &owcities)
 	if err != nil {
-		log.Fatal(err)
+		cityName = oldCityName
+		return "", err
 	}
 	var foundcity OWCity
 	for _, owcity := range owcities {
@@ -172,10 +212,16 @@ func saveCityByName(name string, cities map[string]City) string {
 			foundcity = owcity
 		}
 	}
+	err = setLocation(foundcity.Latitude, foundcity.Longitude)
+	if err != nil {
+		cityName = oldCityName
+		return "", fmt.Errorf("ERROR: The given location is not in germany!\n")
+	}
 	cities[strings.ToLower(name)] = City{Lat: foundcity.Latitude, Lon: foundcity.Longitude}
 	data, err := json.MarshalIndent(cities, "", "  ")
 	if err != nil {
-		log.Fatal(err)
+		cityName = oldCityName
+		return "", err
 	}
 	resourcesPath := "resources/data"
 	saveFile(resourcesPath, "cities.json", data)
@@ -189,12 +235,14 @@ func saveCityByName(name string, cities map[string]City) string {
 	} else {
 		file, err := os.Open(citiesPath)
 		if err != nil {
-			panic(err)
+			cityName = oldCityName
+			return "", err
 		}
 		defer file.Close()
 		content, err := os.ReadFile(citiesPath)
 		if err != nil {
-			panic(err)
+			cityName = oldCityName
+			return "", err
 		}
 		var citiesData []byte
 		if !strings.Contains(string(content), strings.ToLower(name)) {
@@ -205,13 +253,13 @@ func saveCityByName(name string, cities map[string]City) string {
 			saveFile("resources/data", "cities.txt", citiesData)
 		}
 	}
-	return foundcity.Name
+	return foundcity.Name, nil
 }
 
-func reloadWeatherURL() {
+func reloadWeatherURL() error {
 	u, err := url.Parse(weatherAPIURL)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ERROR: GeocodingAPIURL has incorrect values!\nERROR: %v", err)
 	}
 
 	v := u.Query()
@@ -220,12 +268,13 @@ func reloadWeatherURL() {
 	v.Set("date", date)
 	u.RawQuery = v.Encode()
 	weatherAPIURL = u.String()
+	return nil
 }
 
-func reloadGeoURL() {
+func reloadGeoURL() error {
 	u, err := url.Parse(geoAPIURL)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ERROR: GeocodingAPIURL has incorrect values!\nERROR: %v", err)
 	}
 
 	v := u.Query()
@@ -233,6 +282,7 @@ func reloadGeoURL() {
 	v.Set("appid", geoAPIKey)
 	u.RawQuery = v.Encode()
 	geoAPIURL = u.Redacted()
+	return nil
 }
 
 func main() {
@@ -251,13 +301,25 @@ func main() {
 	FDB_DB = opts.FDB_DATABASE
 	FDB_ADDRESS = opts.FDB_ADDRESS
 	now := time.Now()
-	setDate(now.Year(), int(now.Month()), now.Day())
+	err = setDate(now.Year(), int(now.Month()), now.Day())
+	if err != nil {
+		log.Print(err)
+	}
 	if cityName == "" {
 		setLocationByCityName("Berlin", cities)
 	}
 	database := connectToDatabase()
 	defer database.Close()
 	getWeatherRecord(cityName, database)
+	// Error Examples
+	err = setDate(2024, 2, 30)
+	if err != nil {
+		log.Print(err)
+	}
+	err = setLocationByCityName("Afrika", cities)
+	if err != nil {
+		log.Print(err)
+	}
 	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
