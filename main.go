@@ -306,11 +306,26 @@ func main() {
 		log.Print(err)
 	}
 	if cityName == "" {
-		setLocationByCityName("Berlin", cities)
+		err = setLocationByCityName("Berlin", cities)
+		if err != nil {
+			log.Print(err)
+		}
 	}
 	database := connectToDatabase()
 	defer database.Close()
-	getWeatherRecord(cityName, database)
+	err = getWeatherRecord(cityName, database)
+	if err != nil {
+		log.Print(err)
+	}
+	// Test with Second city
+	err = setLocationByCityName("München", cities)
+	if err != nil {
+		log.Print(err)
+	}
+	err = getWeatherRecord(cityName, database)
+	if err != nil {
+		log.Print(err)
+	}
 	// Error Examples
 	fmt.Println(":----------------------------------------------------------------------------:")
 	fmt.Println("\t\t\tERROR EXAMPLES BEGIN HERE")
@@ -334,19 +349,39 @@ func main() {
 
 }
 
-func getWeatherRecord(city string, db pg.DB) {
+func getWeatherRecord(city string, db pg.DB) error {
 	city = strings.ToLower(city)
-	if !weatherDataExists(city, db) {
+	dataExists, err := weatherDataExists(city, db)
+	if err != nil {
+		return err
+	}
+	if !dataExists {
 		fmt.Println("INFO: Weather records don't exist! Getting new weather records from API Server.")
-		requestWeather()
-		saveFutureWeatherInFile(cityName, date)
-		insertCityWeatherRecordsToTable(city, db)
+		err = requestWeather()
+		if err != nil {
+			return fmt.Errorf("ERROR: Requesting weather threw an error!\nERROR: %v", err)
+		}
+		err = saveFutureWeatherInFile(cityName, date)
+		if err != nil {
+			return fmt.Errorf("ERROR: Saving future weather threw an error!\nERROR: %v", err)
+		}
+		err := insertCityWeatherRecordsToTable(city, db)
+		if err != nil {
+			return err
+		}
 	}
-	if !pathExists("resources/weather_records/berlin_0-orig.json") && weatherDataExists(city, db) {
+	if !pathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) && dataExists {
 		fmt.Println("INFO: Weather records don't exist! Getting weather records from Database.")
-		getHourWeatherRecord(city, db)
+		err := getHourWeatherRecord(city, db)
+		if err != nil {
+			return err
+		}
 	}
-	getHourWeatherRecord(city, db)
+	err = getHourWeatherRecord(city, db)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func requestWeatherEvery(d time.Duration, f func(time.Time)) {
@@ -382,119 +417,135 @@ func saveFile(directory, filename string, data []byte) error {
 	return nil
 }
 
-func requestWeather() {
+func requestWeather() error {
 	resp, err := http.Get(weatherAPIURL)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ERROR: Couldn't get weatherAPI from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ERROR: Couldn't read Response from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
 	}
 	err = json.Unmarshal(body, &today)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ERROR: Couldn't unmarshal Response-Body from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
 	}
+	return nil
 }
 
-func requestFutureWeather() {
+func requestFutureWeather() error {
 	resp, err := http.Get(weatherAPIURL)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ERROR: Couldn't get weatherAPI from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ERROR: Couldn't read Response from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
 	}
 	err = json.Unmarshal(body, &notToday)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ERROR: Couldn't unmarshal Response-Body from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
 	}
+	return nil
 }
 
-func saveFutureWeather(city string, count string) {
+func saveFutureWeather(city string, count string) error {
 	data, err := json.MarshalIndent(notToday, "", "  ")
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ERROR: MarshalIndent threw an error!\nERROR: %v", err)
 	}
 
 	err = saveFile("resources/weather_records", strings.ToLower(city)+"_"+count+"-orig.json", data)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }
 
-func saveTodaysWeather(city string, count string) {
+func saveTodaysWeather(city string, count string) error {
 	data, err := json.MarshalIndent(today, "", "  ")
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("ERROR: MarshalIndent threw an error!\nERROR: %v", err)
 	}
 
 	err = saveFile("resources/weather_records", strings.ToLower(city)+"_"+count+"-orig.json", data)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }
 
-func saveFutureWeatherInFile(city string, date string) {
+func saveFutureWeatherInFile(city string, date string) error {
 	count := "0"
-	requestWeather()
-	saveTodaysWeather(city, count)
+	err := requestWeather()
+	if err != nil {
+		return err
+	}
+	err = saveTodaysWeather(city, count)
+	if err != nil {
+		return err
+	}
 	newDate := date
 	for i := 1; i <= 7; i++ { // Create for the next 6 days after the first
-		newDate, count = setFutureDay(newDate, count)
-		requestFutureWeather()
-		saveFutureWeather(city, count)
+		newDate, count, err = setFutureDay(newDate, count)
+		if err != nil {
+			return err
+		}
+		err = requestFutureWeather()
+		if err != nil {
+			return err
+		}
+		err = saveFutureWeather(city, count)
+		if err != nil {
+			return err
+		}
 	}
-	year, month, day := splitDate(date)
+	year, month, day, err := splitDate(date)
+	if err != nil {
+		return err
+	}
 	day += 1
-	setDate(year, month, day)
+	err = setDate(year, month, day)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func setFutureDay(date string, count string) (string, string) {
-	splitDate := strings.Split(date, "-")
-	day, err := strconv.Atoi(splitDate[2])
-	if err != nil {
-		log.Fatalf("Couldn't convert Day: %v", err)
-	}
-	day += 1
-	month, err := strconv.Atoi(splitDate[1])
-	if err != nil {
-		log.Fatalf("Couldn't convert Month: %v", err)
-	}
-	year, err := strconv.Atoi(splitDate[0])
-	if err != nil {
-		log.Fatalf("Couldn't convert Year: %v", err)
-	}
+func setFutureDay(date string, count string) (string, string, error) {
 	_count, err := strconv.Atoi(count)
 	if err != nil {
-		log.Fatalf("Couldn't convert Counter: %v", err)
+		return date, count, fmt.Errorf("ERROR: Couldn't convert Counter!\nERROR: %v", err)
+	}
+	year, month, day, err := splitDate(date)
+	if err != nil {
+		return date, count, err
 	}
 	_count += 1
 	count = strconv.Itoa(_count)
 	setDate(year, month, day)
-	return fmt.Sprintf("%v-%.2v-%.2v", year, month, day), count
+	return fmt.Sprintf("%v-%.2v-%.2v", year, month, day), count, nil
 }
 
-func splitDate(date string) (year, month, day int) {
+func splitDate(date string) (year, month, day int, err error) {
 	splitDate := strings.Split(date, "-")
-	day, err := strconv.Atoi(splitDate[2])
+	day, err = strconv.Atoi(splitDate[2])
 	if err != nil {
-		log.Fatalf("Couldn't convert Day: %v", err)
+		return 0, 0, 0, fmt.Errorf("ERROR: Couldn't convert day!\nERROR: %v", err)
 	}
 	month, err = strconv.Atoi(splitDate[1])
 	if err != nil {
-		log.Fatalf("Couldn't convert Month: %v", err)
+		return 0, 0, 0, fmt.Errorf("ERROR: Couldn't convert month!\nERROR: %v", err)
 	}
 	year, err = strconv.Atoi(splitDate[0])
 	if err != nil {
-		log.Fatalf("Couldn't convert Year: %v", err)
+		return 0, 0, 0, fmt.Errorf("ERROR: Couldn't convert year!\nERROR: %v", err)
 	}
-	return year, month, day
+	return year, month, day, nil
 }
 
 func connectToDatabase() pg.DB {
@@ -508,20 +559,27 @@ func connectToDatabase() pg.DB {
 	return *db
 }
 
-func getHourWeatherRecord(city string, db pg.DB) {
+func getHourWeatherRecord(city string, db pg.DB) error {
 	city = strings.ToLower(city)
 	records, err := queryDayDatabase(city, db)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	today.Hours = records
+	return nil
 }
 
 func queryDayDatabase(city string, db pg.DB) ([]HourWeatherRecord, error) {
 	var res []HourWeatherRecord
-	year, month, day := splitDate(date)
+	year, month, day, err := splitDate(date)
+	if err != nil {
+		return today.Hours, fmt.Errorf("%v\nERROR: Can't query Database because of date failure!", err)
+	}
+	if city != "" {
+		return today.Hours, fmt.Errorf("ERROR: Can't query Database because city isn't set!")
+	}
 	query := fmt.Sprintf("timestamp::date='%v-%.2v-%.2v 00:00:00+00' AND city='%v'", year, month, day, city)
-	err := db.Model().Table("weather_records").
+	err = db.Model().Table("weather_records").
 		Column("timestamp", "source_id", "precipitation", "pressure_msl", "sunshine", "temperature",
 			"wind_direction", "wind_speed", "cloud_cover", "dew_point", "relative_humidity", "visibility",
 			"wind_gust_direction", "wind_gust_speed", "condition", "precipitation_probability",
@@ -535,9 +593,12 @@ func queryDayDatabase(city string, db pg.DB) ([]HourWeatherRecord, error) {
 }
 
 func queryDatabase(t any, value string, hour int, city string, db pg.DB) error {
-	year, month, day := splitDate(date)
+	year, month, day, err := splitDate(date)
+	if err != nil {
+		return fmt.Errorf("%v\nERROR: Can't query Database because of date failure!", err)
+	}
 	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='%v-%.2v-%.2v %.2v:00:00+00' AND city='%v'", value, year, month, day, hour, city)
-	_, err := db.Query(pg.Scan(&t), query)
+	_, err = db.Query(pg.Scan(&t), query)
 	if err != nil {
 		return err
 	}
@@ -551,28 +612,31 @@ func pathExists(path string) bool {
 	return true
 }
 
-func insertCityWeatherRecordsToTable(city string, db pg.DB) {
+func insertCityWeatherRecordsToTable(city string, db pg.DB) error {
 	path := fmt.Sprintf("resources/pg/data/%v.csv", city)
+	if !pathExists(path) {
+		return fmt.Errorf("ERROR: Path \"%v\" ", path)
+	}
 	file, err := os.Open(path)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("ERROR: Couldn't open file (%v)", path)
 	}
 	defer file.Close()
 
 	csvReader := csv.NewReader(file)
 	records, err := csvReader.ReadAll()
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("ERROR: Couldn't read file %v.csv\nERROR: %v", city, err)
 	}
 	_, err = db.Exec(`CREATE TEMPORARY TABLE temp_weather_records (id int NOT NULL, timestamp TIMESTAMP, source_id INT, precipitation FLOAT, pressure_msl FLOAT, sunshine FLOAT, temperature FLOAT, wind_direction INT, wind_speed FLOAT, cloud_cover FLOAT, dew_point FLOAT, relative_humidity FLOAT, visibility FLOAT, wind_gust_direction INT, wind_gust_speed FLOAT, condition VARCHAR(100), precipitation_probability FLOAT, precipitation_probability_6h FLOAT, solar FLOAT, icon VARCHAR(100), city VARCHAR(100), PRIMARY KEY(ID));`)
 	if err != nil {
-		log.Fatal("Exec:", err)
+		return fmt.Errorf("ERROR: Couldn't create temporary table temp_weather_records\nERROR: %v", err)
 	}
 	var csvString []string
 	var count int
 	_, err = db.Query(pg.Scan(&count), "SELECT COUNT(*) FROM weather_records")
 	if err != nil {
-		log.Fatal("Count FAILED!:", err)
+		return fmt.Errorf("ERROR: Count failed!\nERROR: %v", err)
 	}
 
 	for _, inner := range records {
@@ -584,25 +648,29 @@ func insertCityWeatherRecordsToTable(city string, db pg.DB) {
 	reader := strings.NewReader(csvData)
 	_, err = db.CopyFrom(reader, `COPY temp_weather_records FROM STDIN WITH CSV`)
 	if err != nil {
-		log.Fatal("CopyFrom:", err)
+		return fmt.Errorf("ERROR: Couldn't copy temp_weather_records\nERROR: %v", err)
 	}
 
 	_, err = db.Exec("INSERT INTO weather_records\nSELECT * FROM temp_weather_records WHERE timestamp NOT IN (SELECT timestamp FROM weather_records)")
 	if err != nil {
-		log.Fatal("Exec-Overwrite:", err)
+		return fmt.Errorf("ERROR: Couldn't insert temp_weather_records into weather_records\nERROR: %v", err)
 	}
 	fmt.Println("Weather Data inserted into Table!")
+	return nil
 }
 
-func weatherDataExists(city string, db pg.DB) bool {
+func weatherDataExists(city string, db pg.DB) (bool, error) {
 	now := time.Now()
 	var timestamp string
-	queryDatabase(&timestamp, "timestamp", now.Hour(), strings.ToLower(city), db)
+	err := queryDatabase(&timestamp, "timestamp", now.Hour(), strings.ToLower(city), db)
+	if err != nil {
+		return false, err
+	}
 	timeString := date + fmt.Sprintf(" %.2v:00:00+00", now.Hour())
 	if strings.Contains(timestamp, timeString) {
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 /*
