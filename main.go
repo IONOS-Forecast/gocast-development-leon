@@ -22,10 +22,10 @@ import (
 var weatherAPIURL string
 var geoAPIURL string
 var geoAPIKey string
-var FDB_USER string
-var FDB_PASS string
-var FDB_DB string
-var FDB_ADDRESS string
+var fdbUser string
+var fdbPass string
+var fdbDB string
+var fdbAddress string
 var latitude = 52.5170365
 var longitude = 13.3888599
 var date string
@@ -36,14 +36,14 @@ var opts options
 var pgdb *pg.DB
 
 type options struct {
-	WeatherAPIURL  string `v:"wapiurl" long:"weather-api-url" env:"WEATHER_API_URL" description:"URL to interact with Weather provider"`
-	GeoAPIURL      string `v:"gapiurl" long:"geo-api-url" env:"GEO_API_URL" description:"URL to interact with GEO provider"`
-	GeoAPIKEY      string `v:"gapikey" long:"geo-api-key" env:"GEO_API_KEY" description:"KEY to interact with GEO provider"`
-	MinutesRequest string `v:"reqmin" long:"req-aft-min" env:"REQ_AFT_MIN" description:"Minutes until the next request to the Weather provicer is made"`
-	FDB_USER       string `v:"fdb-u" long:"fdb-user" env:"FDB_USER" description:"The user that connects to the forecast-database"`
-	FDB_PASSWORD   string `v:"fdb-p" long:"fdb_password" env:"FDB_PASSWORD" description:"The password to the user for connecting to the forecast-database"`
-	FDB_DATABASE   string `v:"fdb-db" long:"fdb_database" env:"FDB_DATABASE" description:"The database that the user connects to"`
-	FDB_ADDRESS    string `v:"fdb-addr" long:"fdb_address" env:"FDB_ADDRESS" description:"The address of the database"`
+	weatherAPIURL  string `v:"wapiurl" long:"weather-api-url" env:"WEATHER_API_URL" description:"URL to interact with Weather provider"`
+	geoAPIURL      string `v:"gapiurl" long:"geo-api-url" env:"GEO_API_URL" description:"URL to interact with GEO provider"`
+	geoAPIKEY      string `v:"gapikey" long:"geo-api-key" env:"GEO_API_KEY" description:"KEY to interact with GEO provider"`
+	minutesRequest string `v:"reqmin" long:"req-aft-min" env:"REQ_AFT_MIN" description:"Minutes until the next request to the Weather provicer is made"`
+	fdbUser        string `v:"fdb-u" long:"fdb-user" env:"FDB_USER" description:"The user that connects to the forecast-database"`
+	fdbPassword    string `v:"fdb-p" long:"fdb_password" env:"FDB_PASSWORD" description:"The password to the user for connecting to the forecast-database"`
+	fdbDatabase    string `v:"fdb-db" long:"fdb_database" env:"FDB_DATABASE" description:"The database that the user connects to"`
+	fdbAddress     string `v:"fdb-addr" long:"fdb_address" env:"FDB_ADDRESS" description:"The address of the database"`
 }
 
 type WeatherRecord struct {
@@ -293,13 +293,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	weatherAPIURL = opts.WeatherAPIURL
-	geoAPIURL = opts.GeoAPIURL
-	geoAPIKey = opts.GeoAPIKEY
-	FDB_USER = opts.FDB_USER
-	FDB_PASS = opts.FDB_PASSWORD
-	FDB_DB = opts.FDB_DATABASE
-	FDB_ADDRESS = opts.FDB_ADDRESS
+	weatherAPIURL = opts.weatherAPIURL
+	geoAPIURL = opts.geoAPIURL
+	geoAPIKey = opts.geoAPIKEY
+	fdbUser = opts.fdbUser
+	fdbPass = opts.fdbPassword
+	fdbDB = opts.fdbDatabase
+	fdbAddress = opts.fdbAddress
 	now := time.Now()
 	err = setDate(now.Year(), int(now.Month()), now.Day())
 	if err != nil {
@@ -311,9 +311,9 @@ func main() {
 			log.Print(err)
 		}
 	}
-	database := connectToDatabase()
-	defer database.Close()
-	err = getWeatherRecord(cityName, database)
+	//database := connectToDatabase()
+	//defer database.Close()
+	//err = getWeatherRecord(cityName, database)
 	if err != nil {
 		log.Print(err)
 	}
@@ -322,7 +322,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	err = getWeatherRecord(cityName, database)
+	//err = getWeatherRecord(cityName, database)
 	if err != nil {
 		log.Print(err)
 	}
@@ -489,9 +489,10 @@ func saveFutureWeatherInFile(city string, date string) error {
 	if err != nil {
 		return err
 	}
+	oldDate := date
 	newDate := date
 	for i := 1; i <= 7; i++ { // Create for the next 6 days after the first
-		newDate, count, err = setFutureDay(newDate, count)
+		newDate, count, err = setFutureDay(newDate, oldDate, count)
 		if err != nil {
 			return err
 		}
@@ -516,16 +517,17 @@ func saveFutureWeatherInFile(city string, date string) error {
 	return nil
 }
 
-func setFutureDay(date string, count string) (string, string, error) {
+func setFutureDay(newDate, oldDate, count string) (string, string, error) {
 	_count, err := strconv.Atoi(count)
 	if err != nil {
-		return date, count, fmt.Errorf("ERROR: Couldn't convert Counter!\nERROR: %v", err)
+		return newDate, count, fmt.Errorf("ERROR: Couldn't convert Counter!\nERROR: %v", err)
 	}
-	year, month, day, err := splitDate(date)
+	year, month, day, err := splitDate(oldDate)
 	if err != nil {
-		return date, count, err
+		return newDate, count, err
 	}
 	_count += 1
+	day = day + _count
 	count = strconv.Itoa(_count)
 	setDate(year, month, day)
 	return fmt.Sprintf("%v-%.2v-%.2v", year, month, day), count, nil
@@ -548,17 +550,6 @@ func splitDate(date string) (year, month, day int, err error) {
 	return year, month, day, nil
 }
 
-func connectToDatabase() pg.DB {
-	db := pg.Connect(&pg.Options{
-		Addr:     FDB_ADDRESS,
-		User:     FDB_USER,
-		Password: FDB_PASS,
-		Database: FDB_DB,
-	})
-
-	return *db
-}
-
 func getHourWeatherRecord(city string, db pg.DB) error {
 	city = strings.ToLower(city)
 	records, err := queryDayDatabase(city, db)
@@ -575,7 +566,7 @@ func queryDayDatabase(city string, db pg.DB) ([]HourWeatherRecord, error) {
 	if err != nil {
 		return today.Hours, fmt.Errorf("%v\nERROR: Can't query Database because of date failure!", err)
 	}
-	if city != "" {
+	if city == "" {
 		return today.Hours, fmt.Errorf("ERROR: Can't query Database because city %v isn't set!", city)
 	}
 	query := fmt.Sprintf("timestamp::date='%v-%.2v-%.2v 00:00:00+00' AND city='%v'", year, month, day, city)
@@ -622,7 +613,6 @@ func insertCityWeatherRecordsToTable(city string, db pg.DB) error {
 		return fmt.Errorf("ERROR: Couldn't open file (%v)", path)
 	}
 	defer file.Close()
-
 	csvReader := csv.NewReader(file)
 	records, err := csvReader.ReadAll()
 	if err != nil {
@@ -638,7 +628,6 @@ func insertCityWeatherRecordsToTable(city string, db pg.DB) error {
 	if err != nil {
 		return fmt.Errorf("ERROR: Count failed!\nERROR: %v", err)
 	}
-
 	for _, inner := range records {
 		inner = append([]string{strconv.Itoa(count + 1)}, inner...)
 		csvString = append(csvString, strings.Join(inner, ","))
@@ -650,8 +639,20 @@ func insertCityWeatherRecordsToTable(city string, db pg.DB) error {
 	if err != nil {
 		return fmt.Errorf("ERROR: Couldn't copy temp_weather_records\nERROR: %v", err)
 	}
-
-	_, err = db.Exec("INSERT INTO weather_records\nSELECT * FROM temp_weather_records WHERE timestamp NOT IN (SELECT timestamp FROM weather_records)")
+	/*var buf bytes.Buffer
+	_, err = db.CopyTo(&buf, `COPY temp_weather_records TO STDOUT WITH CSV`)
+	if err != nil {
+		return fmt.Errorf("ERROR: Couldn't copy temp_weather_records\nERROR: %v", err)
+	}
+	fmt.Println("TEMP:", buf.String())
+	_, err = db.CopyTo(&buf, `COPY weather_records TO STDOUT WITH CSV`)
+	if err != nil {
+		return fmt.Errorf("ERROR: Couldn't copy weather_records\nERROR: %v", err)
+	}
+	fmt.Println("ACTU:", buf.String())*/
+	_, err = db.Exec("INSERT INTO weather_records\n" +
+		"SELECT * FROM temp_weather_records WHERE timestamp NOT IN (SELECT timestamp FROM weather_records)" +
+		" AND city NOT IN (SELECT city FROM weather_records)")
 	if err != nil {
 		return fmt.Errorf("ERROR: Couldn't insert temp_weather_records into weather_records\nERROR: %v", err)
 	}
