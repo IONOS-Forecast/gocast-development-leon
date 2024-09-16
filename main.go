@@ -312,6 +312,9 @@ func main() {
 	defer database.Close()
 	getWeatherRecord(cityName, database)
 	// Error Examples
+	fmt.Println(":----------------------------------------------------------------------------:")
+	fmt.Println("\t\t\tERROR EXAMPLES BEGIN HERE")
+	fmt.Println(":----------------------------------------------------------------------------:")
 	err = setDate(2024, 2, 30)
 	if err != nil {
 		log.Print(err)
@@ -320,6 +323,9 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
+	fmt.Println(":----------------------------------------------------------------------------:")
+	fmt.Println("\t\t\t ERROR EXAMPLES END HERE")
+	fmt.Println(":----------------------------------------------------------------------------:")
 	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
