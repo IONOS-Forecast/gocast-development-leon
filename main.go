@@ -578,7 +578,7 @@ func queryDayDatabase(city string, db pg.DB) ([]HourWeatherRecord, error) {
 	if city != "" {
 		return today.Hours, fmt.Errorf("ERROR: Can't query Database because city isn't set!")
 	}
-	query := fmt.Sprintf("timestamp::date='%v-%.2v-%.2v 00:00:00+00' AND city='%v'", year, month, day, city)
+	query := fmt.Sprintf("timestamp::date='%v-%.2v-%.2v' AND city='%v'", year, month, day, city)
 	err = db.Model().Table("weather_records").
 		Column("timestamp", "source_id", "precipitation", "pressure_msl", "sunshine", "temperature",
 			"wind_direction", "wind_speed", "cloud_cover", "dew_point", "relative_humidity", "visibility",
