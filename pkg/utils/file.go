@@ -92,15 +92,15 @@ func ConvertWeatherRecords() {
 	exec.Command("/bin/bash", path)
 }
 
-/*func saveTodaysWeather(city string, count string) error {
-	data, err := json.MarshalIndent(today, "", "  ")
-	if err != nil {
-		return fmt.Errorf("ERROR: MarshalIndent threw an error!\nERROR: %v", err)
+func ReplaceGermanCharactersWithNormal(content string) string {
+	if strings.Contains(content, "ä") {
+		content = strings.ReplaceAll(content, "ä", "ae")
 	}
-
-	err = saveFile("resources/weather_records", strings.ToLower(city)+"_"+count+"-orig.json", data)
-	if err != nil {
-		return err
+	if strings.Contains(content, "ö") {
+		content = strings.ReplaceAll(content, "ö", "oe")
 	}
-	return nil
-}*/
+	if strings.Contains(content, "ü") {
+		content = strings.ReplaceAll(content, "ü", "ue")
+	}
+	return content
+}
