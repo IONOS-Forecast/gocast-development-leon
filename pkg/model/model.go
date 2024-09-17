@@ -1,10 +1,11 @@
 package model
 
 type WeatherRecord struct {
-	Hours []HourWeatherRecord `json:"weather"`
+	Hours []Weather_record `json:"weather" pg:"weather_records"`
 }
 
-type HourWeatherRecord struct {
+type Weather_record struct {
+	ID                         int     `pg:"id"`
 	TimeStamp                  string  `json:"timestamp" pg:"timestamp"`
 	SourceID                   int     `json:"source_id" pg:"source_id"`
 	Precipitation              float64 `json:"precipitation" pg:"precipitation"`
@@ -24,6 +25,7 @@ type HourWeatherRecord struct {
 	PrecipitationProbability6h float64 `json:"precipitation_probability_6h" pg:"precipitation_probability_6h"`
 	Solar                      float64 `json:"solar" pg:"solar"`
 	Icon                       string  `json:"icon" pg:"icon"`
+	City                       string  `pg:"city"`
 }
 
 type OWCity struct {
