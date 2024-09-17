@@ -14,6 +14,6 @@ stopdb:
 	@docker stop forecastDB || exit 0
 
 run-test:
-	go run main.go
-	./scripts/convert.sh
-	sudo make startdb
+	make startdb
+	go run main.go \
+	./scripts/convert.sh \
