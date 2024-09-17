@@ -56,15 +56,15 @@ func SetLocationByCityName(name string, cities map[string]model.City) (string, e
 		}
 		return cityName, nil
 	} else { // When the city doesn't exist
-		_, err := SaveCityByName(name, cities)
+		cityName, err := SaveCityByName(name, cities)
 		if err != nil {
 			return "", err
 		}
-		cityName, err = SetLocationByCityName(name, cities)
+		cityName, err = SetLocationByCityName(cityName, cities)
 		if err != nil {
 			return "", err
 		}
-		return "", fmt.Errorf("INFO: City \"%v\" doesn't exist!\nINFO: Getting city \"%v\" from API!", strings.ToLower(name), strings.ToLower(name))
+		return cityName, fmt.Errorf("INFO: City \"%v\" doesn't exist!\nINFO: Getting city \"%v\" from API!", strings.ToLower(name), strings.ToLower(name))
 	}
 }
 
