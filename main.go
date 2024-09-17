@@ -86,6 +86,14 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
+	cityName, err = utils.SetLocationByCityName("Hamburg", cities)
+	if err != nil {
+		log.Print(err)
+	}
+	_, err = database.GetWeatherRecord(cityName, date)
+	if err != nil {
+		log.Print(err)
+	}
 	// Error Examples
 	fmt.Println(":----------------------------------------------------------------------------:")
 	fmt.Println("\t\t\tERROR EXAMPLES BEGIN HERE")
