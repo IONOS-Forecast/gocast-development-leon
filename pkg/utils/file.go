@@ -36,42 +36,44 @@ func SaveFile(directory, filename string, data []byte) error {
 	return nil
 }
 
-func SaveFutureWeatherInFile(city string, date string) error {
+func SaveFutureWeatherInFile(city string, date string) ([]model.WeatherRecord, error) {
 	count := "0"
+	var records []model.WeatherRecord
 	record, err := RequestWeather()
 	if err != nil {
-		return err
+		return records, err
 	}
 	err = SaveWeather(city, count, record)
 	if err != nil {
-		return err
+		return records, err
 	}
 	oldDate := date
 	newDate := date
 	for i := 1; i <= 7; i++ { // Create for the next 6 days after the first
 		newDate, count, err = SetFutureDay(newDate, oldDate, count)
 		if err != nil {
-			return err
+			return []model.WeatherRecord{}, err
 		}
 		record, err = RequestFutureWeather()
 		if err != nil {
-			return err
+			return []model.WeatherRecord{}, err
 		}
+		records = append(records, record)
 		err = SaveWeather(city, count, record)
 		if err != nil {
-			return err
+			return []model.WeatherRecord{}, err
 		}
 	}
 	year, month, day, err := SplitDate(date)
 	if err != nil {
-		return err
+		return []model.WeatherRecord{}, err
 	}
 	day += 1
 	_, err = SetDate(year, month, day)
 	if err != nil {
-		return err
+		return []model.WeatherRecord{}, err
 	}
-	return nil
+	return records, nil
 }
 
 func SaveWeather(city string, count string, record model.WeatherRecord) error {
@@ -87,20 +89,44 @@ func SaveWeather(city string, count string, record model.WeatherRecord) error {
 	return nil
 }
 
-func ConvertWeatherRecords() {
-	path := "scripts/convert.sh"
-	exec.Command("/bin/bash", path)
+func GetAllWeatherRecords(city string, date string) ([]model.WeatherRecord, error) {
+	count := "0"
+	var records []model.WeatherRecord
+	record, err := RequestWeather()
+	if err != nil {
+		return []model.WeatherRecord{}, err
+	}
+	err = SaveWeather(city, count, record)
+	if err != nil {
+		return []model.WeatherRecord{}, err
+	}
+	records = append(records, record)
+	oldDate := date
+	newDate := date
+	for i := 1; i <= 7; i++ { // Create for the next 6 days after the first
+		newDate, count, err = SetFutureDay(newDate, oldDate, count)
+		if err != nil {
+			return []model.WeatherRecord{}, err
+		}
+		record, err = RequestFutureWeather()
+		if err != nil {
+			return []model.WeatherRecord{}, err
+		}
+		records = append(records, record)
+	}
+	year, month, day, err := SplitDate(date)
+	if err != nil {
+		return []model.WeatherRecord{}, err
+	}
+	day += 1
+	_, err = SetDate(year, month, day)
+	if err != nil {
+		return []model.WeatherRecord{}, err
+	}
+	return records, nil
 }
 
-func ReplaceGermanCharactersWithNormal(content string) string {
-	if strings.Contains(content, "ä") {
-		content = strings.ReplaceAll(content, "ä", "ae")
-	}
-	if strings.Contains(content, "ö") {
-		content = strings.ReplaceAll(content, "ö", "oe")
-	}
-	if strings.Contains(content, "ü") {
-		content = strings.ReplaceAll(content, "ü", "ue")
-	}
-	return content
+func ConvertWeatherRecordss() {
+	path := "scripts/convert.sh"
+	exec.Command("/bin/bash", path)
 }
