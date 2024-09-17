@@ -28,8 +28,8 @@ func GetCities() map[string]model.City {
 	return cities
 }
 
-func GetLocation() (float64, float64, error) {
-	return 0, 0, nil
+func GetLocation() (lat, lon float64, err error) {
+	return latitude, longitude, nil
 }
 
 func SetLocation(lat, lon float64) error {

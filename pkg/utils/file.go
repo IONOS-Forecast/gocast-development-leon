@@ -53,7 +53,7 @@ func SaveFutureWeatherInFile(city string, date string) error {
 		if err != nil {
 			return err
 		}
-		record, err = RequestFutureWeather(GetWeatherAPIURL())
+		record, err = RequestFutureWeather()
 		if err != nil {
 			return err
 		}

@@ -132,7 +132,7 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 			return model.WeatherRecord{}, err
 		}
 	}
-	_, err = f.getHourWeatherRecord(city, date)
+	today, err = f.getHourWeatherRecord(city, date)
 	if err != nil {
 		return model.WeatherRecord{}, err
 	}
@@ -192,6 +192,10 @@ func (f postgresDB) InsertCityWeatherRecordsToTable(city string) error {
 		" AND city NOT IN (SELECT city FROM weather_records)")
 	if err != nil {
 		return fmt.Errorf("ERROR: Couldn't insert temp_weather_records into weather_records\nERROR: %v", err)
+	}
+	_, err = pgDB.Exec("DROP TABLE temp_weather_records")
+	if err != nil {
+		return fmt.Errorf("failed to drop temp_weather_records: %v", err)
 	}
 	fmt.Println("Weather Data inserted into Table!")
 	return nil

@@ -82,7 +82,7 @@ func ReloadGeoURL(cityName string) error {
 	return nil
 }
 
-func RequestFutureWeather(weatherAPIURL string) (model.WeatherRecord, error) {
+func RequestFutureWeather() (model.WeatherRecord, error) {
 	var notToday model.WeatherRecord
 	resp, err := http.Get(weatherAPIURL)
 	if err != nil {
