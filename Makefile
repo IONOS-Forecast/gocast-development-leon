@@ -13,6 +13,9 @@ startdb:
 stopdb:
 	@docker stop forecastDB || exit 0
 
+build:
+	go build -o bin/forecast main.go
+
 run-test:
 	make startdb
 	go run main.go \
