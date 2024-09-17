@@ -91,16 +91,3 @@ func ConvertWeatherRecords() {
 	path := "scripts/convert.sh"
 	exec.Command("/bin/bash", path)
 }
-
-func ReplaceGermanCharactersWithNormal(content string) string {
-	if strings.Contains(content, "ä") {
-		content = strings.ReplaceAll(content, "ä", "ae")
-	}
-	if strings.Contains(content, "ö") {
-		content = strings.ReplaceAll(content, "ö", "oe")
-	}
-	if strings.Contains(content, "ü") {
-		content = strings.ReplaceAll(content, "ü", "ue")
-	}
-	return content
-}
