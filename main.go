@@ -62,22 +62,20 @@ func main() {
 		log.Print(err)
 	}
 	cityName := utils.GetCityName()
-	if cityName == "" {
-		cityName, err = utils.SetLocationByCityName("Berlin", cities)
-		if err != nil {
-			log.Print(err)
-		}
-	}
 	database, err := db.NewPG(fdbUser, fdbPass, fdbDB, fdbAddress)
 	if err != nil {
 		log.Print(err)
 	}
 	defer database.Close()
+	// Getting Default Cities if needed
+	cityName, err = utils.SetLocationByCityName("Berlin", cities)
+	if err != nil {
+		log.Print(err)
+	}
 	_, err = database.GetWeatherRecord(cityName, date)
 	if err != nil {
 		log.Print(err)
 	}
-	// Test with Second city
 	cityName, err = utils.SetLocationByCityName("München", cities)
 	if err != nil {
 		log.Print(err)
