@@ -34,13 +34,13 @@ func SetDate(year, month, day int) (string, error) {
 	_, err := CheckDate(_date)
 	if err != nil { // What happens when date is invalid
 		date = now.Format("2006-01-02")
-		return date, fmt.Errorf("ERROR: The date \"%v\" is invalid!\nWARNING: Date set to today (\"%v\")", _date, date)
+		return date, fmt.Errorf("date (\"%v\") invalid! WARNING: Date set to today (\"%v\")", _date, date)
 	}
 	if year >= 2010 && year <= now.Year() && month >= 1 && month <= 12 && day >= 1 && day <= 31 {
 		date = _date
 	} else { // What happens when the date is out of range
 		date = now.Format("2006-01-02")
-		return date, fmt.Errorf("ERROR: The given date \"%v\" is out of range.\nWARNING: Date set to today (\"%v\")\n", _date, date)
+		return date, fmt.Errorf("date out of range (\"%v\") invalid! WARNING: Date set to today (\"%v\")", _date, date)
 	}
 	lat, lon, err := GetLocation()
 	if err != nil { // What happens when location is invalid
@@ -50,7 +50,7 @@ func SetDate(year, month, day int) (string, error) {
 		if err != nil {
 			return date, err
 		}
-		return date, fmt.Errorf("ERROR: The location (Lat: \"%v\" Lon: \"%v\") is invalid!\nWARNING: Location set to Berlin (Lat: \"%v\" Lon: \"%v\")", lat, lon, newLat, newLon)
+		return date, fmt.Errorf("location (Lat: \"%v\" Lon: \"%v\") is invalid! WARNING: Location set to Berlin (Lat: \"%v\" Lon: \"%v\")", lat, lon, newLat, newLon)
 	}
 	err = ReloadWeatherURL(date, lat, lon)
 	if err != nil {
@@ -62,7 +62,7 @@ func SetDate(year, month, day int) (string, error) {
 func SetFutureDay(newDate, oldDate, count string) (string, string, error) {
 	_count, err := strconv.Atoi(count)
 	if err != nil {
-		return newDate, count, fmt.Errorf("ERROR: Couldn't convert Counter!\nERROR: %v", err)
+		return newDate, count, fmt.Errorf("converting counter failed: %v", err)
 	}
 	year, month, day, err := SplitDate(oldDate)
 	if err != nil {
