@@ -172,8 +172,13 @@ func (f postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord) 
 	return nil
 }
 
-func (f postgresDB) Close() {
-	pgDB.Close()
+func (f postgresDB) Close() error {
+	err := pgDB.Close()
+	if err != nil {
+		return err
+	}
+	log.Print("INFO: Connection closed")
+	return nil
 }
 
 func (f postgresDB) SetLocationByCityName(city string) (string, error) {
@@ -181,14 +186,21 @@ func (f postgresDB) SetLocationByCityName(city string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = f.InsertIntoCitiesDatabase(city, city)
+	lcity := strings.ToLower(cityName)
+	lat, lon, err := utils.GetLocation()
 	if err != nil {
 		return "", err
 	}
+	log.Printf("INFO: Location set to \"%v\" with Lat: %v, Lon: %v", lcity, lat, lon)
+	err = f.InsertCityIntoDatabase(city, city)
+	if err != nil {
+		return "", err
+	}
+	log.Printf("INFO: City \"%v\" inserted into database", lcity)
 	return cityName, err
 }
 
-func (f postgresDB) InsertIntoCitiesDatabase(value, name string) error {
+func (f postgresDB) InsertCityIntoDatabase(value, name string) error {
 	cities := utils.GetCities()
 	lat, lon, err := utils.GetLocation()
 	cityName := strings.ToLower(name)
