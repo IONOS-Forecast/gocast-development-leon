@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -63,6 +64,8 @@ func SetLocationByCityName(name string) (string, error) {
 		}
 		return cityName, nil
 	} else { // When the city doesn't exist
+		log.Printf("INFO: City (\"%v\") doesn't exist!", strings.ToLower(name))
+		log.Printf("INFO: Getting city (\"%v\") from API!", strings.ToLower(name))
 		cityName, err := SaveCityByName(name)
 		if err != nil {
 			return "", err
@@ -71,7 +74,7 @@ func SetLocationByCityName(name string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return cityName, fmt.Errorf("INFO: City \"%v\" doesn't exist!\nINFO: Getting city \"%v\" from API!", strings.ToLower(name), strings.ToLower(name))
+		return cityName, err
 	}
 }
 
@@ -181,5 +184,5 @@ func SaveCityByName(name string) (string, error) {
 			SaveFile("resources/data", "cities.txt", citiesData)
 		}
 	}
-	return foundcity.Name, nil
+	return cityName, nil
 }
