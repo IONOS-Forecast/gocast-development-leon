@@ -49,14 +49,14 @@ func connectToDatabase(user, password, database, address string) pg.DB {
 	return *db
 }
 
-func (f postgresDB) QueryDayDatabase(city string, date string) ([]model.Weather_record, error) {
-	var res []model.Weather_record
+func (f postgresDB) QueryDayDatabase(city string, date string) ([]model.HourWeatherRecord, error) {
+	var res []model.HourWeatherRecord
 	year, month, day, err := utils.SplitDate(date)
 	if err != nil {
-		return []model.Weather_record{}, fmt.Errorf("failed to query Database (date): %v", err)
+		return []model.HourWeatherRecord{}, fmt.Errorf("failed to query Database (date): %v", err)
 	}
 	if city == "" {
-		return []model.Weather_record{}, fmt.Errorf("failed to query Database because city isn't set!")
+		return []model.HourWeatherRecord{}, fmt.Errorf("failed to query Database because city isn't set!")
 	}
 	query := fmt.Sprintf("timestamp::date='%v-%.2v-%.2v 00:00:00+00' AND city='%v'", year, month, day, city)
 	err = pgDB.Model().Table("weather_records").
