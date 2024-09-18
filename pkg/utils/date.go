@@ -45,7 +45,7 @@ func SetDate(year, month, day int) (string, error) {
 	lat, lon, err := GetLocation()
 	if err != nil { // What happens when location is invalid
 		date = now.Format("2006-01-02")
-		_, err := SetLocationByCityName(GetCityName(), GetCities())
+		_, err := SetLocationByCityName(GetCityName())
 		newLat, newLon, err := GetLocation()
 		if err != nil {
 			return date, err
@@ -95,7 +95,7 @@ func SetDateAndLocationByCityName(year, month, day int, cityName string, cities 
 	if err != nil {
 		return "", err
 	}
-	cityName, err = SetLocationByCityName(cityName, cities)
+	cityName, err = SetLocationByCityName(cityName)
 	if err != nil {
 		return "", err
 	}
