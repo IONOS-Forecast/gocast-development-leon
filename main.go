@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -36,7 +35,6 @@ type options struct {
 
 func main() {
 	utils.MakeCities()
-	cities := utils.GetCities()
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal(err)
@@ -68,7 +66,7 @@ func main() {
 	}
 	defer database.Close()
 	// Getting Default Cities if needed
-	cityName, err = utils.SetLocationByCityName("Berlin", cities)
+	cityName, err = database.SetLocationByCityName("Berlin")
 	if err != nil {
 		log.Print(err)
 	}
@@ -76,7 +74,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	cityName, err = utils.SetLocationByCityName("München", cities)
+	cityName, err = database.SetLocationByCityName("München")
 	if err != nil {
 		log.Print(err)
 	}
@@ -84,7 +82,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	cityName, err = utils.SetLocationByCityName("Hamburg", cities)
+	cityName, err = database.SetLocationByCityName("Hamburg")
 	if err != nil {
 		log.Print(err)
 	}
@@ -92,7 +90,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	// Error Examples
+	/* Error Examples and MinutesRequest ADD LATER
 	fmt.Println(":----------------------------------------------------------------------------:")
 	fmt.Println("\t\t\tERROR EXAMPLES BEGIN HERE")
 	fmt.Println(":----------------------------------------------------------------------------:")
@@ -107,7 +105,7 @@ func main() {
 	fmt.Println(":----------------------------------------------------------------------------:")
 	fmt.Println("\t\t\t ERROR EXAMPLES END HERE")
 	fmt.Println(":----------------------------------------------------------------------------:")
-	/*minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
+	minutesRequest, err := strconv.Atoi(opts.MinutesRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
