@@ -14,7 +14,7 @@ stopdb:
 	@docker stop forecastDB || exit 0
 
 build:
-	go build -o bin/forecast main.go
+	GOOS=linux GOARCH=amd64 CGO_ENABlED=0 go build -o bin/gocast .
 
 run-test:
 	make startdb
