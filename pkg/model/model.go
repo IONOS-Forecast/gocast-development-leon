@@ -5,7 +5,6 @@ type WeatherRecord struct {
 }
 
 type Weather_record struct {
-	ID                         int     `pg:"id"`
 	TimeStamp                  string  `json:"timestamp" pg:"timestamp"`
 	SourceID                   int     `json:"source_id" pg:"source_id"`
 	Precipitation              float64 `json:"precipitation" pg:"precipitation"`
@@ -38,4 +37,10 @@ type OWCity struct {
 type City struct {
 	Lat float64 `json:"lat"`
 	Lon float64 `json:"lon"`
+}
+
+type Cities struct {
+	Name string  `pg:"name"`
+	Lat  float64 `json:"lat" pg:"lat"`
+	Lon  float64 `json:"lon" pg:"lon"`
 }
