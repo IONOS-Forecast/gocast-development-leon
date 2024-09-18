@@ -6,7 +6,6 @@ import (
 
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/db"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/utils"
-	"github.com/go-pg/pg/v10"
 	"github.com/jessevdk/go-flags"
 	"github.com/joho/godotenv"
 )
@@ -17,10 +16,7 @@ var (
 	fdbDB,
 	fdbAddress string
 )
-var latitude = 52.5170365
-var longitude = 13.3888599
 var opts options
-var pgdb *pg.DB
 
 type options struct {
 	WeatherAPIURL  string `v:"wapiurl" long:"weather-api-url" env:"WEATHER_API_URL" description:"URL to interact with Weather provider"`
