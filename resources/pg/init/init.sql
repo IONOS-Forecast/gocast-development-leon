@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS cities
 
 CREATE TABLE IF NOT EXISTS weather_records
 (
-    id                           SERIAL PRIMARY KEY,
     timestamp                    TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     source_id                    INTEGER NOT NULL,
     precipitation                NUMERIC(10,4),
@@ -29,9 +28,11 @@ CREATE TABLE IF NOT EXISTS weather_records
     icon                         TEXT,
     city                         TEXT,
 
-    FOREIGN KEY (city) REFERENCES cities (name)
+    FOREIGN KEY (city) REFERENCES cities (name),
+    PRIMARY KEY (timestamp, city)
 );
 
-COPY cities(name, lat, lon) FROM '/usr/pgdata/cities.csv' WITH CSV;
-COPY weather_records(timestamp, source_id, precipitation, pressure_msl, sunshine, temperature, wind_direction, wind_speed, cloud_cover, dew_point, relative_humidity, visibility, wind_gust_direction, wind_gust_speed, condition, precipitation_probability, precipitation_probability_6h, solar, icon, city) FROM '/usr/pgdata/berlin.csv' WITH CSV;
-COPY weather_records(timestamp, source_id, precipitation, pressure_msl, sunshine, temperature, wind_direction, wind_speed, cloud_cover, dew_point, relative_humidity, visibility, wind_gust_direction, wind_gust_speed, condition, precipitation_probability, precipitation_probability_6h, solar, icon, city) FROM '/usr/pgdata/hamburg.csv' WITH CSV;
+COPY cities(name, lat, lon) FROM '/usr/pgdata/cities.csv' WITH (FORMAT CSV, ENCODING 'UTF8');
+COPY weather_records(timestamp, source_id, precipitation, pressure_msl, sunshine, temperature, wind_direction, wind_speed, cloud_cover, dew_point, relative_humidity, visibility, wind_gust_direction, wind_gust_speed, condition, precipitation_probability, precipitation_probability_6h, solar, icon, city) FROM '/usr/pgdata/berlin.csv' WITH (FORMAT CSV, ENCODING 'UTF8');
+COPY weather_records(timestamp, source_id, precipitation, pressure_msl, sunshine, temperature, wind_direction, wind_speed, cloud_cover, dew_point, relative_humidity, visibility, wind_gust_direction, wind_gust_speed, condition, precipitation_probability, precipitation_probability_6h, solar, icon, city) FROM '/usr/pgdata/hamburg.csv' WITH (FORMAT CSV, ENCODING 'UTF8');
+COPY weather_records(timestamp, source_id, precipitation, pressure_msl, sunshine, temperature, wind_direction, wind_speed, cloud_cover, dew_point, relative_humidity, visibility, wind_gust_direction, wind_gust_speed, condition, precipitation_probability, precipitation_probability_6h, solar, icon, city) FROM '/usr/pgdata/münchen.csv' WITH (FORMAT CSV, ENCODING 'UTF8');
