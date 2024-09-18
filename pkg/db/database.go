@@ -53,10 +53,10 @@ func (f postgresDB) QueryDayDatabase(city string, date string) ([]model.Weather_
 	var res []model.Weather_record
 	year, month, day, err := utils.SplitDate(date)
 	if err != nil {
-		return []model.Weather_record{}, fmt.Errorf("%v\nERROR: Can't query Database because of date failure!", err)
+		return []model.Weather_record{}, fmt.Errorf("failed to query Database (date): %v", err)
 	}
 	if city == "" {
-		return []model.Weather_record{}, fmt.Errorf("ERROR: Can't query Database because city %v isn't set!", city)
+		return []model.Weather_record{}, fmt.Errorf("failed to query Database because city isn't set!")
 	}
 	query := fmt.Sprintf("timestamp::date='%v-%.2v-%.2v 00:00:00+00' AND city='%v'", year, month, day, city)
 	err = pgDB.Model().Table("weather_records").
@@ -75,7 +75,7 @@ func (f postgresDB) QueryDayDatabase(city string, date string) ([]model.Weather_
 func (f postgresDB) QueryDatabase(t any, value string, date string, hour int, city string) error {
 	year, month, day, err := utils.SplitDate(date)
 	if err != nil {
-		return fmt.Errorf("%v\nERROR: Can't query Database because of date failure!", err)
+		return fmt.Errorf("failed to query Database (date failure): %v", city)
 	}
 	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='%v-%.2v-%.2v %.2v:00:00+00' AND city='%v'", value, year, month, day, hour, city)
 	_, err = pgDB.Query(pg.Scan(&t), query)
@@ -108,14 +108,14 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 	}
 	//if !dataExists {
 	if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", strings.ToLower(city))) {
-		fmt.Println("INFO: Weather records don't exist! Getting new weather records from API Server.")
+		log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
 		today, err = utils.RequestWeather()
 		if err != nil {
-			return model.WeatherRecord{}, fmt.Errorf("ERROR: Requesting weather threw an error!\nERROR: %v", err)
+			return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
 		}
 		_, err := utils.SaveFutureWeatherInFile(city, date)
 		if err != nil {
-			return model.WeatherRecord{}, fmt.Errorf("ERROR: Saving future weather threw an error!\nERROR: %v", err)
+			return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
 		}
 	}
 	records, err := utils.GetWeatherRecordsFromFiles(city)
@@ -135,7 +135,7 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 	utils.SetDate(year, month, day)
 	//}
 	if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) && dataExists {
-		fmt.Println("INFO: Weather records don't exist! Getting weather records from Database.")
+		log.Print("INFO: Weather records don't exist! Getting weather records from Database.")
 		_, err := f.getHourWeatherRecord(city, date)
 		if err != nil {
 			return model.WeatherRecord{}, err
@@ -166,7 +166,7 @@ func (f postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord) 
 	}
 	res, err := pgDB.Model(&record.Hours).OnConflict("DO NOTHING").Insert()
 	if err != nil {
-		return fmt.Errorf("failed insert: %v", err)
+		return fmt.Errorf("failed to insert: %v", err)
 	}
 	log.Printf("INFO: Weather-Data inserted into DB %d", res.RowsAffected())
 	return nil
@@ -214,7 +214,8 @@ func (f postgresDB) QueryCitiesDatabase(t any, value, name string) error {
 	return nil
 }
 
-/*path := fmt.Sprintf("resources/pg/data/%v.csv", city)
+/* OLD WAY didnt quite work
+path := fmt.Sprintf("resources/pg/data/%v.csv", city)
 if !utils.PathExists(path) {
 	return fmt.Errorf("ERROR: Path \"%v\" ", path)
 }
