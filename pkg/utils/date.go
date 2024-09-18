@@ -15,15 +15,15 @@ func SplitDate(date string) (year, month, day int, err error) {
 	splitDate := strings.Split(date, "-")
 	day, err = strconv.Atoi(splitDate[2])
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("ERROR: Couldn't convert day!\nERROR: %v", err)
+		return 0, 0, 0, fmt.Errorf("failed to convert day: %v", err)
 	}
 	month, err = strconv.Atoi(splitDate[1])
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("ERROR: Couldn't convert month!\nERROR: %v", err)
+		return 0, 0, 0, fmt.Errorf("failed to convert month: %v", err)
 	}
 	year, err = strconv.Atoi(splitDate[0])
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("ERROR: Couldn't convert year!\nERROR: %v", err)
+		return 0, 0, 0, fmt.Errorf("failed to convert year: %v", err)
 	}
 	return year, month, day, nil
 }

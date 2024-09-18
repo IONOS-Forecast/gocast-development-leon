@@ -46,7 +46,7 @@ func SetLocation(lat, lon float64) error {
 		}
 		return nil
 	} else { // When location is not in range
-		return fmt.Errorf("ERROR: The location \"Lat:%f; Lon:%f\" is not in germany or not in range!", lat, lon)
+		return fmt.Errorf("location (Lat: \"%v\" Lon: \"%v\") is not in range!", lat, lon)
 	}
 }
 
@@ -143,7 +143,7 @@ func SaveCityByName(name string) (string, error) {
 	err = SetLocation(foundcity.Latitude, foundcity.Longitude)
 	if err != nil {
 		cityName = oldCityName
-		return "", fmt.Errorf("ERROR: The given location is not in germany!\n")
+		return "", err
 	}
 	cities[strings.ToLower(name)] = model.City{Lat: foundcity.Latitude, Lon: foundcity.Longitude}
 	data, err := json.MarshalIndent(cities, "", "  ")

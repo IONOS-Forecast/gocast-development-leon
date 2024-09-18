@@ -23,17 +23,17 @@ func PathExists(path string) bool {
 func SaveFile(directory, filename string, data []byte) error {
 	err := os.MkdirAll(directory, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return fmt.Errorf("failed to make all directories (MkdirAll): %v", err)
 	}
 	filePath := fmt.Sprintf("%s/%s", directory, filename)
 	file, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return fmt.Errorf("failed to create: %v", err)
 	}
 	defer file.Close()
 	_, err = file.Write(data)
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return fmt.Errorf("failed to write: %v", err)
 	}
 	return nil
 }
@@ -84,7 +84,7 @@ func SaveWeather(city string, count string, record model.WeatherRecord) error {
 	}
 	data, err := json.MarshalIndent(record, "", "  ")
 	if err != nil {
-		return fmt.Errorf("ERROR: MarshalIndent threw an error!\nERROR: %v", err)
+		return fmt.Errorf("failed to MarshalIndent: %v", err)
 	}
 
 	err = SaveFile("resources/weather_records", strings.ToLower(city)+"_"+count+"-orig.json", data)

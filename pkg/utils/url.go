@@ -38,17 +38,17 @@ func RequestWeather() (model.WeatherRecord, error) {
 	var today model.WeatherRecord
 	resp, err := http.Get(weatherAPIURL)
 	if err != nil {
-		return model.WeatherRecord{}, fmt.Errorf("ERROR: Couldn't get weatherAPI from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
+		return model.WeatherRecord{}, fmt.Errorf("failed to get weatherAPI from URL (\"%v\"): %v", weatherAPIURL, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return model.WeatherRecord{}, fmt.Errorf("ERROR: Couldn't read Response from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
+		return model.WeatherRecord{}, fmt.Errorf("failed to read response from URL (\"%v\"): %v", weatherAPIURL, err)
 	}
 	err = json.Unmarshal(body, &today)
 	if err != nil {
-		return model.WeatherRecord{}, fmt.Errorf("ERROR: Couldn't unmarshal Response-Body from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
+		return model.WeatherRecord{}, fmt.Errorf("failed to unmarshal response body from URL (\"%v\"): %v", weatherAPIURL, err)
 	}
 	return today, nil
 }
@@ -56,7 +56,7 @@ func RequestWeather() (model.WeatherRecord, error) {
 func ReloadWeatherURL(date string, latitude, longitude float64) error {
 	u, err := url.Parse(weatherAPIURL)
 	if err != nil {
-		return fmt.Errorf("ERROR: GeocodingAPIURL has incorrect values!\nERROR: %v", err)
+		return fmt.Errorf("incorrect values in weatherAPI URL (%v): %v", weatherAPIURL, err)
 	}
 
 	v := u.Query()
@@ -71,7 +71,7 @@ func ReloadWeatherURL(date string, latitude, longitude float64) error {
 func ReloadGeoURL(cityName string) error {
 	u, err := url.Parse(geocodingAPIURL)
 	if err != nil {
-		return fmt.Errorf("ERROR: GeocodingAPIURL has incorrect values!\nERROR: %v", err)
+		return fmt.Errorf("incorrect values in geocodingAPI URL (%v): %v", geocodingAPIURL, err)
 	}
 
 	v := u.Query()
@@ -86,17 +86,17 @@ func RequestFutureWeather() (model.WeatherRecord, error) {
 	var notToday model.WeatherRecord
 	resp, err := http.Get(weatherAPIURL)
 	if err != nil {
-		return model.WeatherRecord{}, fmt.Errorf("ERROR: Couldn't get weatherAPI from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
+		return model.WeatherRecord{}, fmt.Errorf("failed to get weatherAPI from URL (\"%v\"): %v", weatherAPIURL, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return model.WeatherRecord{}, fmt.Errorf("ERROR: Couldn't read Response from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
+		return model.WeatherRecord{}, fmt.Errorf("failed to read response from URL (\"%v\"): %v", weatherAPIURL, err)
 	}
 	err = json.Unmarshal(body, &notToday)
 	if err != nil {
-		return model.WeatherRecord{}, fmt.Errorf("ERROR: Couldn't unmarshal Response-Body from URL \"%v\"\nERROR: %v", weatherAPIURL, err)
+		return model.WeatherRecord{}, fmt.Errorf("failed to unmarshal response body from URL (\"%v\"): %v", weatherAPIURL, err)
 	}
 	return notToday, nil
 }
