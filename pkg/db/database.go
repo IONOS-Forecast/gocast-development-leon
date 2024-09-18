@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -105,34 +106,34 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 	if err != nil {
 		return model.WeatherRecord{}, err
 	}
-	if !dataExists {
-		if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", strings.ToLower(city))) {
-			fmt.Println("INFO: Weather records don't exist! Getting new weather records from API Server.")
-			today, err = utils.RequestWeather()
-			if err != nil {
-				return model.WeatherRecord{}, fmt.Errorf("ERROR: Requesting weather threw an error!\nERROR: %v", err)
-			}
-			_, err := utils.SaveFutureWeatherInFile(city, date)
-			if err != nil {
-				return model.WeatherRecord{}, fmt.Errorf("ERROR: Saving future weather threw an error!\nERROR: %v", err)
-			}
+	//if !dataExists {
+	if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", strings.ToLower(city))) {
+		fmt.Println("INFO: Weather records don't exist! Getting new weather records from API Server.")
+		today, err = utils.RequestWeather()
+		if err != nil {
+			return model.WeatherRecord{}, fmt.Errorf("ERROR: Requesting weather threw an error!\nERROR: %v", err)
 		}
-		records, err := utils.GetAllWeatherRecords(city, date)
-		for i := 0; i < len(records); i++ {
-			err := f.InsertCityWeatherRecordsToTable(records[i])
-			fmt.Println(records[i].Hours[0].City)
-			if err != nil {
-				return model.WeatherRecord{}, err
-			}
+		_, err := utils.SaveFutureWeatherInFile(city, date)
+		if err != nil {
+			return model.WeatherRecord{}, fmt.Errorf("ERROR: Saving future weather threw an error!\nERROR: %v", err)
 		}
-		year, month, day, err := utils.SplitDate(date)
+	}
+	records, err := utils.GetWeatherRecordsFromFiles(city)
+	if err != nil {
+		return model.WeatherRecord{}, err
+	}
+	for i := 0; i < len(records); i++ {
+		err := f.InsertCityWeatherRecordsToTable(records[i])
 		if err != nil {
 			return model.WeatherRecord{}, err
 		}
-		fmt.Println(date)
-		utils.SetDate(year, month, day)
-		fmt.Println(date)
 	}
+	year, month, day, err := utils.SplitDate(date)
+	if err != nil {
+		return model.WeatherRecord{}, err
+	}
+	utils.SetDate(year, month, day)
+	//}
 	if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) && dataExists {
 		fmt.Println("INFO: Weather records don't exist! Getting weather records from Database.")
 		_, err := f.getHourWeatherRecord(city, date)
@@ -159,33 +160,58 @@ func (f postgresDB) getHourWeatherRecord(city, date string) (model.WeatherRecord
 }
 
 func (f postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord) error {
-	var count int
-	_, err := pgDB.Query(pg.Scan(&count), "SELECT COUNT(id) FROM weather_records")
-	if err != nil {
-		return fmt.Errorf("ERROR: Count failed!\nERROR: %v", err)
-	}
-	fmt.Println(count)
 	city := utils.GetCityName()
-	if strings.Contains(city, "ü") {
-		city = "munich"
-	}
-	for i := 0; i < len(record.Hours)-1; i++ {
-		count++
-		record.Hours[i].ID = count
+	for i := 0; i < len(record.Hours); i++ {
 		record.Hours[i].City = strings.ToLower(city)
-		_, err = pgDB.Model(&record.Hours[i]).Where("timestamp = ?", record.Hours[i].TimeStamp).Where("city = ?", record.Hours[i].City).
-			OnConflict("DO NOTHING").SelectOrInsert()
-		if err != nil {
-			return fmt.Errorf("failed insert: %v", err)
-		}
 	}
-
-	//_, err = pgDB.Model(&record.Hours).Where("timestamp = ?", record.Hours[0].TimeStamp).Where("city = ?", city).OnConflict("DO NOTHING").SelectOrInsert()
+	res, err := pgDB.Model(&record.Hours).OnConflict("DO NOTHING").Insert()
+	if err != nil {
+		return fmt.Errorf("failed insert: %v", err)
+	}
+	log.Printf("INFO: Weather-Data inserted into DB %d", res.RowsAffected())
 	return nil
 }
 
 func (f postgresDB) Close() {
 	pgDB.Close()
+}
+
+func (f postgresDB) SetLocationByCityName(city string) (string, error) {
+	cityName, err := utils.SetLocationByCityName(city)
+	if err != nil {
+		return "", err
+	}
+	err = f.InsertIntoCitiesDatabase(city, city)
+	if err != nil {
+		return "", err
+	}
+	return cityName, err
+}
+
+func (f postgresDB) InsertIntoCitiesDatabase(value, name string) error {
+	cities := utils.GetCities()
+	lat, lon, err := utils.GetLocation()
+	cityName := strings.ToLower(name)
+	city := model.Cities{
+		Name: cityName,
+		Lat:  lat,
+		Lon:  lon,
+	}
+	_, err = pgDB.Model(&city).OnConflict("DO NOTHING").Insert()
+	if err != nil {
+		return fmt.Errorf("failed insert: %v", err)
+	}
+	utils.SetCities(cities)
+	return nil
+}
+
+func (f postgresDB) QueryCitiesDatabase(t any, value, name string) error {
+	query := fmt.Sprintf("SELECT %v FROM cities WHERE name='%v'", value, name)
+	_, err := pgDB.Query(pg.Scan(&t), query)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 /*path := fmt.Sprintf("resources/pg/data/%v.csv", city)
