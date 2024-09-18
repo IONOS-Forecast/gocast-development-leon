@@ -28,6 +28,10 @@ func GetCities() map[string]model.City {
 	return cities
 }
 
+func SetCities(map[string]model.City) map[string]model.City {
+	return cities
+}
+
 func GetLocation() (lat, lon float64, err error) {
 	return latitude, longitude, nil
 }
@@ -46,8 +50,11 @@ func SetLocation(lat, lon float64) error {
 	}
 }
 
-func SetLocationByCityName(name string, cities map[string]model.City) (string, error) {
-	cities = ReadCities(name, cities)
+func SetLocationByCityName(name string) (string, error) {
+	cities, err := ReadCities(name, GetCities())
+	if err != nil {
+		return "", err
+	}
 	if city, exists := cities[strings.ToLower(name)]; exists { // When the city exists
 		cityName = name
 		err := SetLocation(city.Lat, city.Lon)
@@ -56,11 +63,11 @@ func SetLocationByCityName(name string, cities map[string]model.City) (string, e
 		}
 		return cityName, nil
 	} else { // When the city doesn't exist
-		cityName, err := SaveCityByName(name, cities)
+		cityName, err := SaveCityByName(name)
 		if err != nil {
 			return "", err
 		}
-		cityName, err = SetLocationByCityName(cityName, cities)
+		cityName, err = SetLocationByCityName(cityName)
 		if err != nil {
 			return "", err
 		}
@@ -68,10 +75,13 @@ func SetLocationByCityName(name string, cities map[string]model.City) (string, e
 	}
 }
 
-func ReadCities(name string, cities map[string]model.City) map[string]model.City {
+func ReadCities(name string, cities map[string]model.City) (map[string]model.City, error) {
 	file, err := os.Open("resources/data/cities.json")
 	if err != nil {
-		SaveCityByName(name, cities)
+		_, err = SaveCityByName(name)
+		if err != nil {
+			return map[string]model.City{}, err
+		}
 		return ReadCities(name, cities)
 	}
 	defer file.Close()
@@ -79,9 +89,9 @@ func ReadCities(name string, cities map[string]model.City) map[string]model.City
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&cities)
 	if err != nil {
-		panic(err)
+		return map[string]model.City{}, err
 	}
-	return cities
+	return cities, nil
 }
 
 func ReadSavedCities(cities map[string]model.City) map[string]model.City {
@@ -99,7 +109,7 @@ func ReadSavedCities(cities map[string]model.City) map[string]model.City {
 	return cities
 }
 
-func SaveCityByName(name string, cities map[string]model.City) (string, error) {
+func SaveCityByName(name string) (string, error) {
 	oldCityName := cityName
 	cityName = name
 	err := ReloadGeoURL(cityName)
