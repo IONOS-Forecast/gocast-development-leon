@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -75,6 +76,7 @@ func SaveFutureWeatherInFile(city string, date string) ([]model.WeatherRecord, e
 	if err != nil {
 		return []model.WeatherRecord{}, err
 	}
+	log.Printf("INFO: Weather for %v saved", strings.ToLower(city))
 	return records, nil
 }
 
@@ -97,6 +99,7 @@ func SaveWeather(city string, count string, record model.WeatherRecord) error {
 func ConvertWeatherRecordss() {
 	path := "scripts/convert.sh"
 	exec.Command("/bin/bash", path)
+	log.Printf("INFO: Weather Records successfully converted")
 }
 
 func GetWeatherRecordsFromFiles(city string) ([]model.WeatherRecord, error) {
@@ -122,5 +125,6 @@ func GetWeatherRecordsFromFiles(city string) ([]model.WeatherRecord, error) {
 		records = append(records, record)
 		count++
 	}
+	log.Printf("INFO: Weather Records received from File")
 	return records, nil
 }

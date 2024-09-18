@@ -168,7 +168,7 @@ func (f postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord) 
 	if err != nil {
 		return fmt.Errorf("failed to insert: %v", err)
 	}
-	log.Printf("INFO: Weather-Data inserted into DB %d", res.RowsAffected())
+	log.Printf("INFO: Weather-Data inserted into DB: %d", res.RowsAffected())
 	return nil
 }
 

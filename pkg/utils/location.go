@@ -45,6 +45,7 @@ func SetLocation(lat, lon float64) error {
 		if err != nil {
 			return err
 		}
+		log.Printf("INFO: Location set to (Lat: \"%v\"Lon: \"%v\")", lat, lon)
 		return nil
 	} else { // When location is not in range
 		return fmt.Errorf("location (Lat: \"%v\" Lon: \"%v\") is not in range!", lat, lon)
@@ -74,6 +75,7 @@ func SetLocationByCityName(name string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		log.Printf("INFO: Location set to (Lat: \"%v\"Lon: \"%v\")", city.Lat, city.Lon)
 		return cityName, err
 	}
 }
