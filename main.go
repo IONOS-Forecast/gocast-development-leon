@@ -90,7 +90,8 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	/* Error Examples and MinutesRequest ADD LATER
+	/* TODO: ADD OR REMOVE LATER
+	Error Examples and MinutesRequest
 	fmt.Println(":----------------------------------------------------------------------------:")
 	fmt.Println("\t\t\tERROR EXAMPLES BEGIN HERE")
 	fmt.Println(":----------------------------------------------------------------------------:")
