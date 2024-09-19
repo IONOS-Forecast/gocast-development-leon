@@ -204,7 +204,7 @@ func (f postgresDB) InsertCityIntoDatabase(value, name string) error {
 	cities := utils.GetCities()
 	lat, lon, err := utils.GetLocation()
 	cityName := strings.ToLower(name)
-	city := model.Cities{
+	city := model.City{
 		Name: cityName,
 		Lat:  lat,
 		Lon:  lon,

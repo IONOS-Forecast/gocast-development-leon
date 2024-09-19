@@ -36,12 +36,8 @@ type OWCity struct {
 }
 
 type City struct {
-	Lat float64 `json:"lat"`
-	Lon float64 `json:"lon"`
-}
-
-type Cities struct {
-	Name string  `pg:"name"`
-	Lat  float64 `json:"lat" pg:"lat"`
-	Lon  float64 `json:"lon" pg:"lon"`
+	tableName struct{} `pg:"cities"`
+	Name      string   `pg:"name"`
+	Lat       float64  `json:"lat"`
+	Lon       float64  `json:"lon"`
 }
