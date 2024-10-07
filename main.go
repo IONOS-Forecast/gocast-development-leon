@@ -82,5 +82,6 @@ func main() {
 	requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)*/
 	var handler metric.Handler
 	http.HandleFunc("/GET", handler.Get)
+	http.HandleFunc("/error", handler.Error)
 	http.ListenAndServe(":3333", nil)
 }
