@@ -102,12 +102,16 @@ func (f postgresDB) WeatherDataExists(city, date string) (bool, error) {
 func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, error) {
 	var today model.WeatherRecord
 	city = strings.ToLower(city)
+	year, month, day, err := utils.SplitDate(date)
+	if err != nil {
+		return model.WeatherRecord{}, err
+	}
+	utils.SetDate(year, month, day)
 	dataExists, err := f.WeatherDataExists(city, date)
 	if err != nil {
 		return model.WeatherRecord{}, err
 	}
-	//if !dataExists {
-	if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", strings.ToLower(city))) {
+	if !dataExists {
 		log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
 		today, err = utils.RequestWeather()
 		if err != nil {
@@ -117,23 +121,18 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 		if err != nil {
 			return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
 		}
-	}
-	records, err := utils.GetWeatherRecordsFromFiles(city)
-	if err != nil {
-		return model.WeatherRecord{}, err
-	}
-	for i := 0; i < len(records); i++ {
-		err := f.InsertCityWeatherRecordsToTable(records[i])
+		records, err := utils.GetWeatherRecordsFromFiles(city)
 		if err != nil {
 			return model.WeatherRecord{}, err
 		}
+		for i := 0; i < len(records); i++ {
+			err := f.InsertCityWeatherRecordsToTable(records[i])
+			if err != nil {
+				return model.WeatherRecord{}, err
+			}
+		}
+		utils.SetDate(year, month, day)
 	}
-	year, month, day, err := utils.SplitDate(date)
-	if err != nil {
-		return model.WeatherRecord{}, err
-	}
-	utils.SetDate(year, month, day)
-	//}
 	if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) && dataExists {
 		log.Print("INFO: Weather records don't exist! Getting weather records from Database.")
 		_, err := f.getHourWeatherRecord(city, date)
@@ -150,12 +149,12 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 
 func (f postgresDB) getHourWeatherRecord(city, date string) (model.WeatherRecord, error) {
 	city = strings.ToLower(city)
-	_, err := f.QueryDayDatabase(city, date)
+	records, err := f.QueryDayDatabase(city, date)
 	if err != nil {
 		return model.WeatherRecord{}, err
 	}
 	var today model.WeatherRecord
-	//today.Hours = records
+	today.Hours = records
 	return today, nil
 }
 
