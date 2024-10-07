@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -33,22 +34,24 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
-	weather, err := database.GetWeatherRecord(city, date)
+	record, err := database.GetWeatherRecord(city, date)
 	if err != nil {
 		log.Print(err)
 		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
-	if weather.Hours == nil {
+	if record.Hours == nil {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	for i, v := range weather.Hours {
-		v.City = city
-		fmt.Fprintf(w, fmt.Sprintf("Weather Hour %v: %v\n", i, v))
+	data, err := json.MarshalIndent(record, "", "  ")
+	if err != nil {
+		log.Print(err)
+		http.Redirect(w, r, "/error", http.StatusFound)
+		return
 	}
-	fmt.Fprintf(w, "City:"+city)
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 func (h Handler) Error(w http.ResponseWriter, r *http.Request) {
