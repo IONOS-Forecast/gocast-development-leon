@@ -1,10 +1,10 @@
-package somedir
+package db
 
 import (
 	"os"
 	"testing"
 
-	"github.com/IONOS-Forecast/gocast-development-leon/RetrieveDataFromProvider/pkg/testutil"
+	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/testutil"
 	"github.com/go-pg/pg/v10"
 	_ "github.com/lib/pq"
 )

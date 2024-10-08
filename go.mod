@@ -1,4 +1,4 @@
-module github.com/IONOS-Forecast/gocast-development-leon/RetrieveDataFromProvider
+module github.com/IONOS-Forecast/gocast-development-leon/Gocast
 
 go 1.23.1
 
