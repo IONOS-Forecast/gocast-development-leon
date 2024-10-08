@@ -22,7 +22,7 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
-	_, err = utils.SetDateAndLocationByCityName(year, month, day, city, utils.GetCities())
+	city, err = utils.SetDateAndLocationByCityName(year, month, day, city, utils.GetCities())
 	if err != nil {
 		log.Print(err)
 		http.Redirect(w, r, "/error", http.StatusFound)
