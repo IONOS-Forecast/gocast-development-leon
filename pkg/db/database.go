@@ -117,18 +117,20 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 			return model.WeatherRecord{}, err
 		}
 		if len(records) != 0 {
-			timestamp := records[0].Hours[0].TimeStamp[:10]
-			if timestamp != date {
-				log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
-				today, err = utils.RequestWeather()
-				if err != nil {
-					return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
+			if len(records[0].Hours) != 0 {
+				timestamp := records[0].Hours[0].TimeStamp[:10]
+				if timestamp != date {
+					log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
+					today, err = utils.RequestWeather()
+					if err != nil {
+						return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
+					}
+					_, err = utils.SaveFutureWeatherInFile(city, date)
+					if err != nil {
+						return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
+					}
+					utils.SetDate(year, month, day)
 				}
-				_, err = utils.SaveFutureWeatherInFile(city, date)
-				if err != nil {
-					return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
-				}
-				utils.SetDate(year, month, day)
 			}
 		}
 		records, err = utils.GetWeatherRecordsFromFiles(city)

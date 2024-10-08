@@ -10,6 +10,7 @@ import (
 )
 
 var date string
+var earliestDate = time.Date(2010, time.December, 1, 0, 0, 0, 0, time.UTC)
 
 func SplitDate(date string) (year, month, day int, err error) {
 	splitDate := strings.Split(date, "-")
@@ -82,6 +83,13 @@ func CheckDate(s string) (time.Time, error) {
 	date, err := time.Parse("2006-01-02", s)
 	if err != nil {
 		return date, err
+	}
+	var lastDate = time.Now().Add(7 * 24 * time.Hour)
+	if date.Before(time.Date(2010, time.December, 1, 0, 0, 0, 0, time.UTC)) {
+		return date, fmt.Errorf("date should not be before december 2010")
+	}
+	if date.After(lastDate) {
+		return date, fmt.Errorf("date should not be after next 7 days")
 	}
 	return date, nil
 }

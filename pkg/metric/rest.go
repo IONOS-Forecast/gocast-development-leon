@@ -10,7 +10,8 @@ import (
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/utils"
 )
 
-type Handler struct{}
+type Handler struct {
+}
 
 func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 	date := r.URL.Query().Get("date")
@@ -18,26 +19,31 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 	year, month, day, err := utils.SplitDate(date)
 	if err != nil {
 		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusFound)
+		http.Redirect(w, r, "/error", http.StatusBadRequest)
 		return
 	}
-	utils.SetDateAndLocationByCityName(year, month, day, city, utils.GetCities())
+	_, err = utils.SetDateAndLocationByCityName(year, month, day, city, utils.GetCities())
+	if err != nil {
+		log.Print(err)
+		http.Redirect(w, r, "/error", http.StatusBadRequest)
+		return
+	}
 	database, err := db.NewPG(utils.FdbUser, utils.FdbPass, utils.FdbDB, utils.FdbAddress)
 	if err != nil {
 		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusFound)
+		http.Redirect(w, r, "/error", http.StatusBadRequest)
 		return
 	}
 	defer database.Close()
 	database.QueryCitiesDatabase(&city, "name", city)
 	if city == "" {
-		http.Redirect(w, r, "/error", http.StatusFound)
+		http.Redirect(w, r, "/error", http.StatusBadRequest)
 		return
 	}
 	record, err := database.GetWeatherRecord(city, date)
 	if err != nil {
 		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusFound)
+		http.Redirect(w, r, "/error", http.StatusBadRequest)
 		return
 	}
 	if record.Hours == nil {
@@ -47,7 +53,7 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 	data, err := json.MarshalIndent(record, "", "  ")
 	if err != nil {
 		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusFound)
+		http.Redirect(w, r, "/error", http.StatusBadRequest)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -56,5 +62,5 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) Error(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusBadRequest)
-	fmt.Fprintf(w, "404 - Bad Request")
+	fmt.Fprintf(w, "400 - Bad Request")
 }
