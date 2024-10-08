@@ -59,6 +59,8 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 	RegisterMetrics(record, 0)
+	// Method for whole day
+	// RegisterDayMetrics(record)
 }
 
 func (h Handler) Error(w http.ResponseWriter, r *http.Request) {

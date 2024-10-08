@@ -46,6 +46,17 @@ func RegisterMetrics(record model.WeatherRecord, hour int) {
 	}
 }
 
+func RegisterDayMetrics(record model.WeatherRecord) {
+	if len(record.Hours) != 0 {
+		for i := 0; i < len(record.Hours); i++ {
+			m.Temperature.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": record.Hours[i].TimeStamp}).Set(record.Hours[i].Temperature)
+			m.Humidity.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": record.Hours[i].TimeStamp}).Set(float64(record.Hours[i].RelativeHumidity))
+			m.Windspeed.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": record.Hours[i].TimeStamp}).Set(record.Hours[i].WindSpeed)
+			m.Pressure.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": record.Hours[i].TimeStamp}).Set(record.Hours[i].PressureMSL)
+		}
+	}
+}
+
 func getMetrics() *model.Metrics {
 	if m != nil {
 		return m
