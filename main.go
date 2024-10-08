@@ -7,7 +7,6 @@ import (
 
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/db"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/metric"
-	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/model"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -22,7 +21,7 @@ var (
 
 func main() {
 	reg := prometheus.NewRegistry()
-	m := NewMetrics(reg)
+	metric.NewMetrics(reg)
 	utils.MakeCities()
 	utils.DotEnvironment()
 	utils.SetWeatherAPIURL(utils.Options.WeatherAPIURL)
@@ -48,7 +47,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	registerMetrics(record, m)
+	metric.RegisterMetrics(record, 0)
 	cityName, err = database.SetLocationByCityName("München")
 	if err != nil {
 		log.Print(err)
@@ -57,7 +56,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	registerMetrics(record, m)
+	metric.RegisterMetrics(record, 0)
 	cityName, err = database.SetLocationByCityName("Hamburg")
 	if err != nil {
 		log.Print(err)
@@ -66,7 +65,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	registerMetrics(record, m)
+	metric.RegisterMetrics(record, 0)
 	/* TODO: ADD OR REMOVE LATER
 	Error Examples and MinutesRequest
 	fmt.Println(":----------------------------------------------------------------------------:")
@@ -103,50 +102,4 @@ func main() {
 		log.Fatal(http.ListenAndServe(":8081", pMux))
 	}()
 	select {}
-}
-
-type Metrics struct {
-	temperature *prometheus.GaugeVec
-	humidity    *prometheus.GaugeVec
-	windspeed   *prometheus.GaugeVec
-	pressure    *prometheus.GaugeVec
-}
-
-func NewMetrics(reg prometheus.Registerer) *Metrics {
-	m := &Metrics{
-		temperature: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "gocast",
-			Name:      "temperature",
-			Help:      "Temperature of each city",
-		}, []string{"location"}),
-		humidity: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "gocast",
-			Name:      "humidity",
-			Help:      "Humidity of each city",
-		}, []string{"location"}),
-		windspeed: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "gocast",
-			Name:      "wind_speed",
-			Help:      "Wind speed of each city",
-		}, []string{"location"}),
-		pressure: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "gocast",
-			Name:      "pressure",
-			Help:      "Pressure of each city",
-		}, []string{"location"}),
-	}
-	reg.MustRegister(m.temperature)
-	reg.MustRegister(m.humidity)
-	reg.MustRegister(m.windspeed)
-	reg.MustRegister(m.pressure)
-	return m
-}
-
-func registerMetrics(record model.WeatherRecord, m *Metrics) {
-	if len(record.Hours) != 0 {
-		m.temperature.With(prometheus.Labels{"location": record.Hours[0].City}).Set(record.Hours[0].Temperature)
-		m.humidity.With(prometheus.Labels{"location": record.Hours[0].City}).Set(float64(record.Hours[0].RelativeHumidity))
-		m.windspeed.With(prometheus.Labels{"location": record.Hours[0].City}).Set(record.Hours[0].WindSpeed)
-		m.pressure.With(prometheus.Labels{"location": record.Hours[0].City}).Set(record.Hours[0].PressureMSL)
-	}
 }

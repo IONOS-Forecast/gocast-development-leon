@@ -58,6 +58,7 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+	RegisterMetrics(record, 0)
 }
 
 func (h Handler) Error(w http.ResponseWriter, r *http.Request) {

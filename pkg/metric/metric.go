@@ -5,8 +5,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+var m *model.Metrics
+
 func NewMetrics(reg prometheus.Registerer) *model.Metrics {
-	m := &model.Metrics{
+	m = &model.Metrics{
 		Temperature: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "gocast",
 			Name:      "temperature",
@@ -35,11 +37,18 @@ func NewMetrics(reg prometheus.Registerer) *model.Metrics {
 	return m
 }
 
-func RegisterMetrics(record model.WeatherRecord, hour int, m *model.Metrics) {
+func RegisterMetrics(record model.WeatherRecord, hour int) {
 	if len(record.Hours) != 0 {
 		m.Temperature.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": record.Hours[hour].TimeStamp}).Set(record.Hours[hour].Temperature)
 		m.Humidity.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": record.Hours[hour].TimeStamp}).Set(float64(record.Hours[hour].RelativeHumidity))
 		m.Windspeed.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": record.Hours[hour].TimeStamp}).Set(record.Hours[hour].WindSpeed)
 		m.Pressure.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": record.Hours[hour].TimeStamp}).Set(record.Hours[hour].PressureMSL)
 	}
+}
+
+func getMetrics() *model.Metrics {
+	if m != nil {
+		return m
+	}
+	return nil
 }
