@@ -21,7 +21,7 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
-	utils.SetDate(year, month, day)
+	utils.SetDateAndLocationByCityName(year, month, day, city, utils.GetCities())
 	database, err := db.NewPG(utils.FdbUser, utils.FdbPass, utils.FdbDB, utils.FdbAddress)
 	if err != nil {
 		log.Print(err)
