@@ -164,6 +164,10 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 		if err != nil {
 			return model.WeatherRecord{}, err
 		}
+		_, err = utils.SaveFutureWeatherInFile(city, date)
+		if err != nil {
+			return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
+		}
 	}
 	today, err = f.getHourWeatherRecord(city, date)
 	if err != nil {
@@ -219,15 +223,14 @@ func (f postgresDB) SetLocationByCityName(city string) (string, error) {
 		return "", err
 	}
 	log.Printf("INFO: Location set to \"%v\" with Lat: %v, Lon: %v", lcity, lat, lon)
-	err = f.InsertCityIntoDatabase(city, city)
+	err = f.InsertCityIntoDatabase(cityName)
 	if err != nil {
 		return "", err
 	}
-	log.Printf("INFO: City \"%v\" inserted into database", lcity)
 	return cityName, err
 }
 
-func (f postgresDB) InsertCityIntoDatabase(value, name string) error {
+func (f postgresDB) InsertCityIntoDatabase(name string) error {
 	cities := utils.GetCities()
 	lat, lon, err := utils.GetLocation()
 	cityName := strings.ToLower(name)
@@ -241,6 +244,7 @@ func (f postgresDB) InsertCityIntoDatabase(value, name string) error {
 		return fmt.Errorf("failed insert: %v", err)
 	}
 	utils.SetCities(cities)
+	log.Printf("INFO: City \"%v\" inserted into database", cityName)
 	return nil
 }
 
