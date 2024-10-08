@@ -19,31 +19,31 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 	year, month, day, err := utils.SplitDate(date)
 	if err != nil {
 		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusBadRequest)
+		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
 	_, err = utils.SetDateAndLocationByCityName(year, month, day, city, utils.GetCities())
 	if err != nil {
 		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusBadRequest)
+		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
 	database, err := db.NewPG(utils.FdbUser, utils.FdbPass, utils.FdbDB, utils.FdbAddress)
 	if err != nil {
 		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusBadRequest)
+		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
 	defer database.Close()
 	database.QueryCitiesDatabase(&city, "name", city)
 	if city == "" {
-		http.Redirect(w, r, "/error", http.StatusBadRequest)
+		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
 	record, err := database.GetWeatherRecord(city, date)
 	if err != nil {
 		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusBadRequest)
+		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
 	if record.Hours == nil {
@@ -53,7 +53,7 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 	data, err := json.MarshalIndent(record, "", "  ")
 	if err != nil {
 		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusBadRequest)
+		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
