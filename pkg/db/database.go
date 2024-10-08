@@ -116,7 +116,7 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 		if err != nil {
 			return model.WeatherRecord{}, err
 		}
-		if records[0].Hours != nil {
+		if len(records) != 0 {
 			timestamp := records[0].Hours[0].TimeStamp[:10]
 			if timestamp != date {
 				log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
@@ -128,11 +128,15 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 				if err != nil {
 					return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
 				}
+				utils.SetDate(year, month, day)
 			}
 		}
 		records, err = utils.GetWeatherRecordsFromFiles(city)
 		if err != nil {
 			return model.WeatherRecord{}, err
+		}
+		if len(records) == 0 {
+			return model.WeatherRecord{}, fmt.Errorf("failed to get weather records! (internal error)")
 		}
 		for i := 0; i < len(records); i++ {
 			err := f.InsertCityWeatherRecordsToTable(records[i])
@@ -140,7 +144,6 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 				return model.WeatherRecord{}, err
 			}
 		}
-		utils.SetDate(year, month, day)
 	}
 	if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) && dataExists {
 		log.Print("INFO: Weather records don't exist! Getting weather records from Database.")
