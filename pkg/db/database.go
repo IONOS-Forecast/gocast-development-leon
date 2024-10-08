@@ -14,7 +14,18 @@ import (
 var pgDB pg.DB
 
 type DBI interface {
-	Query(city, date string)
+	QueryDayDatabase(city, date string) ([]model.HourWeatherRecord, error)
+	QueryDatabase(t any, value string, date string, hour int, city string) error
+	WeatherDataExists(city, date string) (bool, error)
+	GetWeatherRecord(city, date string) (model.WeatherRecord, error)
+	InsertCityIntoDatabase(name string) error
+	InsertCityWeatherRecordsToTable(record model.WeatherRecord) error
+	QueryCitiesDatabase(t any, value, name string) error
+	SetLocationByCityName(city string) (string, error)
+}
+
+type postgresDB struct {
+	pgDB pg.DB
 }
 
 func (f postgresDB) query(t any, value, city, date string, hour int) error {
@@ -29,11 +40,7 @@ func (f postgresDB) getDay(city, date string) (model.WeatherRecord, error) {
 	return today, err
 }
 
-type postgresDB struct {
-	pgDB pg.DB
-}
-
-func NewPG(user, password, name, address string) (postgresDB, error) {
+func NewPG(user, password, name, address string) (DBI, error) {
 	pgDB = connectToDatabase(user, password, name, address)
 	return postgresDB{pgDB: pgDB}, nil
 }

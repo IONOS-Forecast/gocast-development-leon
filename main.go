@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	defer database.Close()
+	//defer database.Close()
 	// Getting Default Cities if needed
 	cityName, err = database.SetLocationByCityName("Berlin")
 	if err != nil {
@@ -90,7 +90,7 @@ func main() {
 	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
 	var handler metric.Handler
 	mux := http.NewServeMux()
-	mux.HandleFunc("/GET", handler.Get)
+	mux.HandleFunc("/direct", handler.Get)
 	mux.HandleFunc("/error", handler.Error)
 
 	pMux := http.NewServeMux()

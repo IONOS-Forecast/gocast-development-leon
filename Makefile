@@ -16,7 +16,7 @@ stopdb:
 build:
 	GOOS=linux GOARCH=amd64 CGO_ENABlED=0 go build -o bin/gocast .
 
-run-test:
+run:
 	make startdb
-	go run main.go \
-	./scripts/convert.sh \
+	sleep 2
+	go run main.go

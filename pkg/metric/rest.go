@@ -11,56 +11,66 @@ import (
 )
 
 type Handler struct {
+	db db.DBI
+}
+
+func NewHandler(db db.DBI) *Handler {
+	return &Handler{db: db}
 }
 
 func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 	date := r.URL.Query().Get("date")
 	city := r.URL.Query().Get("city")
-	year, month, day, err := utils.SplitDate(date)
-	if err != nil {
-		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusFound)
-		return
-	}
-	city, err = utils.SetDateAndLocationByCityName(year, month, day, city, utils.GetCities())
-	if err != nil {
-		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusFound)
-		return
-	}
-	database, err := db.NewPG(utils.FdbUser, utils.FdbPass, utils.FdbDB, utils.FdbAddress)
-	if err != nil {
-		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusFound)
-		return
-	}
-	defer database.Close()
-	database.QueryCitiesDatabase(&city, "name", city)
-	if city == "" {
-		http.Redirect(w, r, "/error", http.StatusFound)
-		return
-	}
-	record, err := database.GetWeatherRecord(city, date)
-	if err != nil {
-		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusFound)
-		return
-	}
-	if record.Hours == nil {
+	if date != "" && city != "" {
+		year, month, day, err := utils.SplitDate(date)
+		if err != nil {
+			log.Print(err)
+			http.Redirect(w, r, "/error", http.StatusBadRequest)
+			return
+		}
+		city, err = utils.SetDateAndLocationByCityName(year, month, day, city, utils.GetCities())
+		if err != nil {
+			log.Print(err)
+			http.Redirect(w, r, "/error", http.StatusBadRequest)
+			return
+		}
+		/*database, err := db.NewPG(utils.FdbUser, utils.FdbPass, utils.FdbDB, utils.FdbAddress)
+		if err != nil {
+			log.Print(err)
+			http.Redirect(w, r, "/error", http.StatusBadRequest)
+			return
+		}
+		defer database.Close()*/
+		h.db.QueryCitiesDatabase(&city, "name", city)
+		if city == "" {
+			http.Redirect(w, r, "/error", http.StatusBadRequest)
+			return
+		}
+		record, err := h.db.GetWeatherRecord(city, date)
+		if err != nil {
+			log.Print(err)
+			http.Redirect(w, r, "/error", http.StatusBadRequest)
+			return
+		}
+		if record.Hours == nil {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		data, err := json.MarshalIndent(record, "", "  ")
+		if err != nil {
+			log.Print(err)
+			http.Redirect(w, r, "/error", http.StatusBadRequest)
+			return
+		}
 		w.WriteHeader(http.StatusOK)
+		w.Write(data)
+		RegisterMetrics(record, 0)
+		// Method for whole day
+		// RegisterDayMetrics(record)
+	} else {
+		http.Redirect(w, r, "/error", http.StatusBadRequest)
 		return
 	}
-	data, err := json.MarshalIndent(record, "", "  ")
-	if err != nil {
-		log.Print(err)
-		http.Redirect(w, r, "/error", http.StatusFound)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-	RegisterMetrics(record, 0)
-	// Method for whole day
-	// RegisterDayMetrics(record)
 }
 
 func (h Handler) Error(w http.ResponseWriter, r *http.Request) {
