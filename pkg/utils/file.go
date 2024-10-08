@@ -110,7 +110,8 @@ func GetWeatherRecordsFromFiles(city string) ([]model.WeatherRecord, error) {
 		path := fmt.Sprintf("resources/weather_records/%v_%v-orig.json", strings.ToLower(city), strconv.Itoa(count))
 		file, err := os.Open(path)
 		if err != nil {
-			return nil, err
+			SaveFutureWeatherInFile(city, GetDate())
+			GetWeatherRecordsFromFiles(city)
 		}
 		defer file.Close()
 
