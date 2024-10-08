@@ -150,7 +150,8 @@ func SaveCityByName(name string) (string, error) {
 		cityName = oldCityName
 		return "", err
 	}
-	cities[strings.ToLower(name)] = model.City{Lat: foundcity.Latitude, Lon: foundcity.Longitude}
+	cities[strings.ToLower(name)] = model.City{Name: foundcity.Name, Lat: foundcity.Latitude, Lon: foundcity.Longitude}
+	cityName = foundcity.Name
 	data, err := json.MarshalIndent(cities, "", "  ")
 	if err != nil {
 		cityName = oldCityName

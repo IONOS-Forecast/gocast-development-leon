@@ -1,13 +1,16 @@
 {
   "berlin": {
+    "Name": "Berlin",
     "lat": 52.5170365,
     "lon": 13.3888599
   },
   "hamburg": {
+    "Name": "Hamburg",
     "lat": 53.550341,
     "lon": 10.000654
   },
   "münchen": {
+    "Name": "Munich",
     "lat": 48.1371079,
     "lon": 11.5753822
   }
