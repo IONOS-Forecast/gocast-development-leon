@@ -83,11 +83,7 @@ func SetLocationByCityName(name string) (string, error) {
 func ReadCities(name string, cities map[string]model.City) (map[string]model.City, error) {
 	file, err := os.Open("resources/data/cities.json")
 	if err != nil {
-		_, err = SaveCityByName(name)
-		if err != nil {
-			return map[string]model.City{}, err
-		}
-		return ReadCities(name, cities)
+		return map[string]model.City{}, err
 	}
 	defer file.Close()
 
