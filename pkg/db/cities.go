@@ -14,19 +14,55 @@ type CityDBI interface {
 	GetCities() (map[string]model.City, error)
 	CityExists(name string) bool
 	SetLocationByCityName(name string) (string, error)
+	ContainsCity(city string) (bool, error)
+	GetCity(cityName string) (model.City, error)
 }
 
 type cities struct {
+	db   DBI
 	file string
 }
 
-func NewCityDB(file string) CityDBI {
+func NewCityDB(database DBI, file string) CityDBI {
 	if file == "" {
 		file = "resources/data/cities.json"
 	}
 	return cities{
+		db:   database,
 		file: file,
 	}
+}
+
+func (c cities) ContainsCity(cityName string) (bool, error) {
+	cityName = strings.ToLower(cityName)
+	var cities []model.City
+	err := c.db.getDatabase().Model(&cities).Table("cities").Where("cities.name = ?", cityName).Select()
+	if err != nil {
+		return false, err
+	}
+	for _, v := range cities {
+		if v.Name == cityName {
+			return true, nil
+		}
+	}
+	return true, nil
+}
+
+func (c cities) GetCity(cityName string) (model.City, error) {
+	cityName = strings.ToLower(cityName)
+	var cities []model.City
+	err := c.db.getDatabase().Model(&cities).Table("cities").Where("cities.name = ?", cityName).Select()
+	if err != nil {
+		return model.City{}, err
+	}
+	var city model.City
+	for _, v := range cities {
+		if v.Name == cityName {
+			city = v
+			continue
+		}
+	}
+	return city, nil
 }
 
 func (c cities) GetCities() (map[string]model.City, error) {

@@ -20,6 +20,7 @@ type DBI interface {
 	InsertCityIntoDatabase(name string) error
 	InsertCityWeatherRecordsToTable(record model.WeatherRecord) error
 	QueryCitiesDatabase(t any, value, name string) error
+	getDatabase() pg.DB
 	SetLocationByCityName(city string) (string, error)
 }
 
@@ -77,6 +78,10 @@ func (p postgresDB) QueryDatabase(t any, value string, date string, hour int, ci
 		return err
 	}
 	return nil
+}
+
+func (p postgresDB) getDatabase() pg.DB {
+	return p.pgDB
 }
 
 func (p postgresDB) WeatherDataExists(city, date string) (bool, error) {
@@ -235,6 +240,12 @@ func (p postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 		err = utils.SaveWeather(city, "0", record)
 		if err != nil {
 			return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
+		}
+	}
+	if len(record.Hours) == 0 {
+		record, err = p.getHourWeatherRecord(city, date)
+		if err != nil {
+			return model.WeatherRecord{}, err
 		}
 	}
 	return record, nil
