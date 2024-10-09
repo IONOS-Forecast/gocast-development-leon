@@ -38,6 +38,11 @@ func main() {
 		log.Print(err)
 	}
 	cityDB := db.NewCityDB("")
+	cities, err := cityDB.GetCities()
+	if err != nil {
+		log.Print(err)
+	}
+	weatherMapDB := db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey)
 	// Getting Default Cities if needed
 	cityName, err = database.SetLocationByCityName("Berlin")
 	if err != nil {
@@ -88,7 +93,7 @@ func main() {
 	}
 	*/
 	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
-	handler := metric.NewHandler(database, cityDB)
+	handler := metric.NewHandler(database, cityDB, weatherMapDB)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/direct", handler.Get)
 	mux.HandleFunc("/error", handler.Error)
