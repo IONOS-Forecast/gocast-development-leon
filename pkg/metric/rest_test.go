@@ -13,24 +13,18 @@ import (
 
 type dbMock struct {
 	weatherRecord model.WeatherRecord
-	//	pgDB          pg.DB
-	err    error
-	exists bool
-	city   string
+	err           error
+	exists        bool
+	city          string
+	cities        []string
 }
 
-func (m *dbMock) setResult(weatherRecord model.WeatherRecord, err error, exists bool, city string) {
+func (m *dbMock) setResult(weatherRecord model.WeatherRecord, err error, exists bool, city string, cities []string) {
 	m.weatherRecord = weatherRecord
 	m.err = err
 	m.exists = exists
 	m.city = city
-	// dbi, err := db.NewPG(utils.Options.FdbUser, utils.Options.FdbPassword, utils.Options.FdbDatabase, utils.Options.FdbAddress)
-	//
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//
-	// m.pgDB = dbi.GetDatabase()
+	m.cities = cities
 }
 
 func (m dbMock) QueryDayDatabase(city, date string) ([]model.HourWeatherRecord, error) {
@@ -68,7 +62,7 @@ func TestGet(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-09&city=Berlin", nil)
 	rr := httptest.NewRecorder()
 	dbMock := dbMock{}
-	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin")
+	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", []string{"Berlin"})
 	cityDB := db.NewCityDB(dbMock, "")
 	cities := map[string]model.City{"Berlin": model.City{Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
 	h := metric.NewHandler(dbMock, cityDB, db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey))
@@ -82,7 +76,7 @@ func TestGetError(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-21&city=Berlin", nil)
 	rr := httptest.NewRecorder()
 	dbMock := dbMock{}
-	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin")
+	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", []string{"Berlin"})
 	cityDB := db.NewCityDB(dbMock, "")
 	cities := map[string]model.City{"Berlin": model.City{Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
 	h := metric.NewHandler(dbMock, cityDB, db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey))
@@ -91,6 +85,8 @@ func TestGetError(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
 	}
 }
+
+// TODO: Fix testing
 
 /*func TestError(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://localhost:8080/error", nil)
