@@ -32,11 +32,6 @@ func SplitDate(date string) (year, month, day int, err error) {
 func SetDate(year, month, day int) (string, error) {
 	now := time.Now()
 	_date := fmt.Sprintf("%v-%.2v-%.2v", year, month, day)
-	_, err := CheckDate(_date)
-	if err != nil { // What happens when date is invalid
-		date = now.Format("2006-01-02")
-		return date, fmt.Errorf("date (\"%v\") invalid! WARNING: Date set to today (\"%v\")", _date, date)
-	}
 	if year >= 2010 && year <= now.Year() && month >= 1 && month <= 12 && day >= 1 && day <= 31 {
 		date = _date
 	} else { // What happens when the date is out of range
