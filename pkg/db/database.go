@@ -20,7 +20,7 @@ type DBI interface {
 	InsertCityIntoDatabase(name string) error
 	InsertCityWeatherRecordsToTable(record model.WeatherRecord) error
 	QueryCitiesDatabase(t any, value, name string) error
-	GetDatabase() pg.DB
+	GetCities() ([]model.City, error)
 	SetLocationByCityName(city string) (string, error)
 }
 
@@ -80,8 +80,10 @@ func (p postgresDB) QueryDatabase(t any, value string, date string, hour int, ci
 	return nil
 }
 
-func (p postgresDB) GetDatabase() pg.DB {
-	return p.pgDB
+func (p postgresDB) GetCities() ([]model.City, error) {
+	var cities []model.City
+	err := p.pgDB.Model(&cities).Table("cities").Select()
+	return cities, err
 }
 
 func (p postgresDB) WeatherDataExists(city, date string) (bool, error) {

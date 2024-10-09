@@ -36,7 +36,7 @@ func NewCityDB(database DBI, file string) CityDBI {
 func (c cities) ContainsCity(cityName string) (bool, error) {
 	cityName = strings.ToLower(cityName)
 	var cities []model.City
-	err := c.db.GetDatabase().Model(&cities).Table("cities").Where("cities.name = ?", cityName).Select()
+	cities, err := c.db.GetCities()
 	if err != nil {
 		return false, err
 	}
@@ -45,13 +45,14 @@ func (c cities) ContainsCity(cityName string) (bool, error) {
 			return true, nil
 		}
 	}
-	return true, nil
+	return false, nil
 }
 
 func (c cities) GetCity(cityName string) (model.City, error) {
 	cityName = strings.ToLower(cityName)
 	var cities []model.City
-	err := c.db.GetDatabase().Model(&cities).Table("cities").Where("cities.name = ?", cityName).Select()
+	//err := c.db.GetDatabase().Model(&cities).Table("cities").Where("cities.name = ?", cityName).Select()
+	cities, err := c.db.GetCities()
 	if err != nil {
 		return model.City{}, err
 	}

@@ -9,14 +9,14 @@ import (
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/metric"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/model"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/utils"
-	"github.com/go-pg/pg/v10"
 )
 
 type dbMock struct {
 	weatherRecord model.WeatherRecord
-	err           error
-	exists        bool
-	city          string
+	//	pgDB          pg.DB
+	err    error
+	exists bool
+	city   string
 }
 
 func (m *dbMock) setResult(weatherRecord model.WeatherRecord, err error, exists bool, city string) {
@@ -24,6 +24,13 @@ func (m *dbMock) setResult(weatherRecord model.WeatherRecord, err error, exists 
 	m.err = err
 	m.exists = exists
 	m.city = city
+	// dbi, err := db.NewPG(utils.Options.FdbUser, utils.Options.FdbPassword, utils.Options.FdbDatabase, utils.Options.FdbAddress)
+	//
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//
+	// m.pgDB = dbi.GetDatabase()
 }
 
 func (m dbMock) QueryDayDatabase(city, date string) ([]model.HourWeatherRecord, error) {
@@ -50,28 +57,15 @@ func (m dbMock) InsertCityWeatherRecordsToTable(record model.WeatherRecord) erro
 func (m dbMock) QueryCitiesDatabase(t any, value, name string) error {
 	return m.err
 }
-func (m dbMock) GetDatabase() pg.DB {
-	return pg.DB{}
+func (m dbMock) GetCities() ([]model.City, error) {
+	return nil, nil
 }
 func (m dbMock) SetLocationByCityName(city string) (string, error) {
 	return m.city, m.err
 }
 
-/*
 func TestGet(t *testing.T) {
-	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-08&city=Berlin", nil)
-	rr := httptest.NewRecorder()
-	var h metric.Handler
-	h.Get(rr, req)
-	//handler := http.HandlerFunc(h.Get)
-	//handler.ServeHTTP(rr, req)
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
-	}
-}*/
-
-func TestGet(t *testing.T) {
-	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-08&city=Berlin", nil)
+	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-09&city=Berlin", nil)
 	rr := httptest.NewRecorder()
 	dbMock := dbMock{}
 	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin")
