@@ -18,6 +18,7 @@ type Rest interface {
 type handler struct {
 	db     db.DBI
 	cityDB db.CityDB
+	//openWEatherDB ...
 }
 
 func NewHandler(db db.DBI, cityDB db.CityDB) Rest {
@@ -39,6 +40,7 @@ func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 		}
 
 		city, err = utils.SetDateAndLocationByCityName(year, month, day, city, h.cityDB.GetCities())
+
 		if err != nil {
 			log.Print(err)
 			http.Redirect(w, r, "/error", http.StatusBadRequest)
@@ -51,6 +53,7 @@ func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer database.Close()*/
+
 		h.db.QueryCitiesDatabase(&city, "name", city)
 		if city == "" {
 			http.Redirect(w, r, "/error", http.StatusBadRequest)
