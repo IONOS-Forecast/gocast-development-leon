@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	//defer database.Close()
+	cityDB := db.NewCityDB("")
 	// Getting Default Cities if needed
 	cityName, err = database.SetLocationByCityName("Berlin")
 	if err != nil {
@@ -88,7 +88,7 @@ func main() {
 	}
 	*/
 	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
-	var handler metric.Handler
+	handler := metric.NewHandler(database, cityDB)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/direct", handler.Get)
 	mux.HandleFunc("/error", handler.Error)

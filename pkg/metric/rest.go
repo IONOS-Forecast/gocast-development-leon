@@ -10,15 +10,21 @@ import (
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/utils"
 )
 
-type Handler struct {
-	db db.DBI
+type Rest interface {
+	Get(w http.ResponseWriter, r *http.Request)
+	Error(w http.ResponseWriter, r *http.Request)
 }
 
-func NewHandler(db db.DBI) *Handler {
-	return &Handler{db: db}
+type handler struct {
+	db     db.DBI
+	cityDB db.CityDBI
 }
 
-func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
+func NewHandler(db db.DBI, cityDB db.CityDBI) Rest {
+	return &handler{db: db, cityDB: cityDB}
+}
+
+func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 	date := r.URL.Query().Get("date")
 	city := r.URL.Query().Get("city")
 	if date != "" && city != "" {
@@ -73,7 +79,7 @@ func (h Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) Error(w http.ResponseWriter, r *http.Request) {
+func (h handler) Error(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusBadRequest)
 	fmt.Fprintf(w, "400 - Bad Request")
 }
