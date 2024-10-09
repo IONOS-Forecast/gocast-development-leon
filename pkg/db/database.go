@@ -6,12 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-pg/pg/v10"
+
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/model"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/utils"
-	"github.com/go-pg/pg/v10"
 )
-
-var pgDB pg.DB
 
 type DBI interface {
 	QueryDayDatabase(city, date string) ([]model.HourWeatherRecord, error)
@@ -28,20 +27,9 @@ type postgresDB struct {
 	pgDB pg.DB
 }
 
-func (f postgresDB) query(t any, value, city, date string, hour int) error {
-	err := f.QueryDatabase(&t, value, date, hour, city)
-	return err
-}
-
-func (f postgresDB) getDay(city, date string) (model.WeatherRecord, error) {
-	var today model.WeatherRecord
-	records, err := f.QueryDayDatabase(city, date)
-	today.Hours = records
-	return today, err
-}
-
+// NewPG is a constructor for a DB. Constructors should be close to struct definitions.
 func NewPG(user, password, name, address string) (DBI, error) {
-	pgDB = connectToDatabase(user, password, name, address)
+	pgDB := connectToDatabase(user, password, name, address)
 	return postgresDB{pgDB: pgDB}, nil
 }
 
@@ -56,6 +44,18 @@ func connectToDatabase(user, password, database, address string) pg.DB {
 	return *db
 }
 
+func (f postgresDB) query(t any, value, city, date string, hour int) error {
+	err := f.QueryDatabase(&t, value, date, hour, city)
+	return err
+}
+
+func (f postgresDB) getDay(city, date string) (model.WeatherRecord, error) {
+	var today model.WeatherRecord
+	records, err := f.QueryDayDatabase(city, date)
+	today.Hours = records
+	return today, err
+}
+
 func (f postgresDB) QueryDayDatabase(city string, date string) ([]model.HourWeatherRecord, error) {
 	var res []model.HourWeatherRecord
 	year, month, day, err := utils.SplitDate(date)
@@ -66,7 +66,7 @@ func (f postgresDB) QueryDayDatabase(city string, date string) ([]model.HourWeat
 		return []model.HourWeatherRecord{}, fmt.Errorf("failed to query Database because city isn't set!")
 	}
 	query := fmt.Sprintf("timestamp::date='%v-%.2v-%.2v 00:00:00+00' AND city='%v'", year, month, day, city)
-	err = pgDB.Model().Table("weather_records").
+	err = f.pgDB.Model().Table("weather_records").
 		Column("timestamp", "source_id", "precipitation", "pressure_msl", "sunshine", "temperature",
 			"wind_direction", "wind_speed", "cloud_cover", "dew_point", "relative_humidity", "visibility",
 			"wind_gust_direction", "wind_gust_speed", "condition", "precipitation_probability",
@@ -85,7 +85,7 @@ func (f postgresDB) QueryDatabase(t any, value string, date string, hour int, ci
 		return fmt.Errorf("failed to query Database (date failure): %v", city)
 	}
 	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='%v-%.2v-%.2v %.2v:00:00+00' AND city='%v'", value, year, month, day, hour, city)
-	_, err = pgDB.Query(pg.Scan(&t), query)
+	_, err = f.pgDB.Query(pg.Scan(&t), query)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func (f postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord) 
 	for i := 0; i < len(record.Hours); i++ {
 		record.Hours[i].City = strings.ToLower(city)
 	}
-	res, err := pgDB.Model(&record.Hours).OnConflict("DO NOTHING").Insert()
+	res, err := f.pgDB.Model(&record.Hours).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return fmt.Errorf("failed to insert: %v", err)
 	}
@@ -211,7 +211,7 @@ func (f postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord) 
 }
 
 func (f postgresDB) Close() error {
-	err := pgDB.Close()
+	err := f.pgDB.Close()
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (f postgresDB) InsertCityIntoDatabase(name string) error {
 		Lat:  lat,
 		Lon:  lon,
 	}
-	_, err = pgDB.Model(&city).OnConflict("DO NOTHING").Insert()
+	_, err = f.pgDB.Model(&city).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return fmt.Errorf("failed insert: %v", err)
 	}
@@ -257,55 +257,9 @@ func (f postgresDB) InsertCityIntoDatabase(name string) error {
 
 func (f postgresDB) QueryCitiesDatabase(t any, value, name string) error {
 	query := fmt.Sprintf("SELECT %v FROM cities WHERE name='%v'", value, name)
-	_, err := pgDB.Query(pg.Scan(&t), query)
+	_, err := f.pgDB.Query(pg.Scan(&t), query)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
-/* OLD WAY didnt quite work
-path := fmt.Sprintf("resources/pg/data/%v.csv", city)
-if !utils.PathExists(path) {
-	return fmt.Errorf("ERROR: Path \"%v\" ", path)
-}
-utils.ConvertWeatherRecords()
-file, err := os.Open(path)
-if err != nil {
-	return fmt.Errorf("ERROR: Couldn't open file (%v)", path)
-}
-defer file.Close()
-csvReader := csv.NewReader(file)
-records, err := csvReader.ReadAll()
-if err != nil {
-	return fmt.Errorf("ERROR: Couldn't read file %v.csv\nERROR: %v", city, err)
-}
-_, err = pgDB.Exec(`CREATE TEMPORARY TABLE IF NOT EXISTS temp_weather_records (id INT NOT NULL, timestamp TIMESTAMP, source_id INT, precipitation FLOAT, pressure_msl FLOAT, sunshine FLOAT, temperature FLOAT, wind_direction INT, wind_speed FLOAT, cloud_cover FLOAT, dew_point FLOAT, relative_humidity FLOAT, visibility FLOAT, wind_gust_direction INT, wind_gust_speed FLOAT, condition VARCHAR(100), precipitation_probability FLOAT, precipitation_probability_6h FLOAT, solar FLOAT, icon VARCHAR(100), city VARCHAR(100), PRIMARY KEY(ID));`)
-if err != nil {
-	return fmt.Errorf("ERROR: Couldn't create temporary table temp_weather_records\nERROR: %v", err)
-}
-var csvString []string
-var count int
-_, err = pgDB.Query(pg.Scan(&count), "SELECT COUNT(*) FROM weather_records")
-if err != nil {
-	return fmt.Errorf("ERROR: Count failed!\nERROR: %v", err)
-}
-for _, inner := range records {
-	inner = append([]string{strconv.Itoa(count + 1)}, inner...)
-	csvString = append(csvString, strings.Join(inner, ","))
-	count++
-}
-csvData := strings.Join(csvString, "\n")
-reader := strings.NewReader(csvData)
-_, err = pgDB.CopyFrom(reader, `COPY temp_weather_records FROM STDIN WITH CSV`)
-if err != nil {
-	return fmt.Errorf("ERROR: Couldn't copy temp_weather_records\nERROR: %v", err)
-}
-_, err = pgDB.Exec("INSERT INTO weather_records SELECT * FROM temp_weather_records ON CONFLICT (id, timestamp, city) DO NOTHING")
-if err != nil {
-	return fmt.Errorf("failed to insert temp_weather_records into weather_records: %v", err)
-}
-_, err = pgDB.Exec("DROP TABLE temp_weather_records")
-if err != nil {
-	return fmt.Errorf("failed to drop temp_weather_records: %v", err)
-}*/
