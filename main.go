@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	cityDB := db.NewCityDB("")
+	cityDB := db.NewCityDB(database, "")
 	cities, err := cityDB.GetCities()
 	if err != nil {
 		log.Print(err)
