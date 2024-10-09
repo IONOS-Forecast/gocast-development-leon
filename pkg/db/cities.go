@@ -8,6 +8,7 @@ import (
 )
 
 type CityDBI interface {
+	GetCities() (map[string]model.City, error)
 }
 
 type cities struct {
@@ -16,7 +17,7 @@ type cities struct {
 
 func NewCityDB(file string) CityDBI {
 	if file == "" {
-		file = ""
+		file = "resources/data/cities.json"
 	}
 	return cities{
 		file: file,
