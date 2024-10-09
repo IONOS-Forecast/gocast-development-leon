@@ -88,7 +88,7 @@ func main() {
 	}
 	*/
 	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
-	var handler metric.Handler
+	var handler metric.Rest
 	mux := http.NewServeMux()
 	mux.HandleFunc("/direct", handler.Get)
 	mux.HandleFunc("/error", handler.Error)
