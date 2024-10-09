@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/db"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/metric"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/utils"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -37,6 +38,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
+	cityDB := db.NewCityDB("")
 	//defer database.Close()
 	// Getting Default Cities if needed
 	cityName, err = database.SetLocationByCityName("Berlin")
@@ -88,7 +90,8 @@ func main() {
 	}
 	*/
 	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
-	var handler metric.Rest
+	handler := metric.NewHandler(database, cityDB)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/direct", handler.Get)
 	mux.HandleFunc("/error", handler.Error)

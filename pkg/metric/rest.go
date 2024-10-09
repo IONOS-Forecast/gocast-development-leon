@@ -16,11 +16,15 @@ type Rest interface {
 }
 
 type handler struct {
-	db db.DBI
+	db     db.DBI
+	cityDB db.CityDB
 }
 
-func NewHandler(db db.DBI) Rest {
-	return &handler{db: db}
+func NewHandler(db db.DBI, cityDB db.CityDB) Rest {
+	return &handler{
+		db:     db,
+		cityDB: cityDB,
+	}
 }
 
 func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +37,8 @@ func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/error", http.StatusBadRequest)
 			return
 		}
-		city, err = utils.SetDateAndLocationByCityName(year, month, day, city, utils.GetCities())
+
+		city, err = utils.SetDateAndLocationByCityName(year, month, day, city, h.cityDB.GetCities())
 		if err != nil {
 			log.Print(err)
 			http.Redirect(w, r, "/error", http.StatusBadRequest)
