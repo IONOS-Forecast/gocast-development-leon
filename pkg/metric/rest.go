@@ -16,12 +16,13 @@ type Rest interface {
 }
 
 type handler struct {
-	db     db.DBI
-	cityDB db.CityDBI
+	db           db.DBI
+	cityDB       db.CityDBI
+	weatherMapDB db.WeatherMapDB
 }
 
-func NewHandler(db db.DBI, cityDB db.CityDBI) Rest {
-	return &handler{db: db, cityDB: cityDB}
+func NewHandler(db db.DBI, cityDB db.CityDBI, weatherMap db.WeatherMapDB) Rest {
+	return &handler{db: db, cityDB: cityDB, weatherMapDB: weatherMap}
 }
 
 func (h handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -31,50 +32,69 @@ func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 		year, month, day, err := utils.SplitDate(date)
 		if err != nil {
 			log.Print(err)
-			http.Redirect(w, r, "/error", http.StatusBadRequest)
+			http.Redirect(w, r, "/error", http.StatusFound)
 			return
 		}
-		city, err = utils.SetDateAndLocationByCityName(year, month, day, city, utils.GetCities())
+		date, err = utils.SetDate(year, month, day)
 		if err != nil {
 			log.Print(err)
 			http.Redirect(w, r, "/error", http.StatusBadRequest)
 			return
 		}
-		/*database, err := db.NewPG(utils.FdbUser, utils.FdbPass, utils.FdbDB, utils.FdbAddress)
+		cityExists, err := h.cityDB.ContainsCity(city)
 		if err != nil {
 			log.Print(err)
 			http.Redirect(w, r, "/error", http.StatusBadRequest)
 			return
 		}
-		defer database.Close()*/
+		_, err = h.cityDB.ContainsCity("hamburg")
+		if err != nil {
+			log.Print(err)
+			http.Redirect(w, r, "/error", http.StatusBadRequest)
+			return
+		}
+		if cityExists {
+			city, err := h.cityDB.GetCity(city)
+			if err != nil {
+				log.Print(err)
+				http.Redirect(w, r, "/error", http.StatusBadRequest)
+				return
+			}
+			utils.SetLocation(city.Lat, city.Lon)
+		} else {
+			city, err = h.cityDB.SetLocationByCityName(city)
+			if err != nil {
+				log.Print(err)
+				http.Redirect(w, r, "/error", http.StatusBadRequest)
+				return
+			}
+		}
 		h.db.QueryCitiesDatabase(&city, "name", city)
 		if city == "" {
-			http.Redirect(w, r, "/error", http.StatusBadRequest)
+			http.Redirect(w, r, "/error", http.StatusFound)
 			return
 		}
 		record, err := h.db.GetWeatherRecord(city, date)
 		if err != nil {
 			log.Print(err)
-			http.Redirect(w, r, "/error", http.StatusBadRequest)
-			return
-		}
-		if record.Hours == nil {
-			w.WriteHeader(http.StatusOK)
+			http.Redirect(w, r, "/error", http.StatusFound)
 			return
 		}
 		data, err := json.MarshalIndent(record, "", "  ")
 		if err != nil {
 			log.Print(err)
-			http.Redirect(w, r, "/error", http.StatusBadRequest)
+			http.Redirect(w, r, "/error", http.StatusFound)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
-		RegisterMetrics(record, 0)
+		if record.Hours != nil {
+			RegisterMetrics(record, 0)
+		}
 		// Method for whole day
 		// RegisterDayMetrics(record)
 	} else {
-		http.Redirect(w, r, "/error", http.StatusBadRequest)
+		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
 }
