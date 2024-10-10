@@ -47,12 +47,6 @@ func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/error", http.StatusBadRequest)
 			return
 		}
-		_, err = h.cityDB.ContainsCity("hamburg")
-		if err != nil {
-			log.Print(err)
-			http.Redirect(w, r, "/error", http.StatusBadRequest)
-			return
-		}
 		if cityExists {
 			city, err := h.cityDB.GetCity(city)
 			if err != nil {
@@ -90,9 +84,9 @@ func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 		if record.Hours != nil {
 			RegisterMetrics(record, 0)
+			// Method for whole day
+			// RegisterDayMetrics(record)
 		}
-		// Method for whole day
-		// RegisterDayMetrics(record)
 	} else {
 		http.Redirect(w, r, "/error", http.StatusFound)
 		return
