@@ -308,7 +308,7 @@ func (p postgresDB) SetLocationByCityName(city string) (string, error) {
 }
 
 func (p postgresDB) InsertCityIntoDatabase(name string) error {
-	cities := utils.GetCities()
+	cities := utils.GetSavedCities()
 	lat, lon, err := utils.GetLocation()
 	cityName := strings.ToLower(name)
 	city := model.City{
