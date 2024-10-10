@@ -48,7 +48,7 @@ func (m dbMock) GetWeatherRecords(city, date string) (model.WeatherRecord, error
 func (m dbMock) InsertCityIntoDatabase(name string) error {
 	return m.err
 }
-func (m dbMock) InsertCityWeatherRecordsToTable(record model.WeatherRecord) error {
+func (m dbMock) InsertCityWeatherRecordsToTable(record model.WeatherRecord, city string) error {
 	return m.err
 }
 func (m dbMock) QueryCitiesDatabase(t any, value, name string) error {

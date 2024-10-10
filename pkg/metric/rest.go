@@ -54,6 +54,7 @@ func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/error", http.StatusBadRequest)
 				return
 			}
+			utils.SetCity(city.Name)
 			utils.SetLocation(city.Lat, city.Lon)
 		} else {
 			city, err = h.cityDB.SetLocationByCityName(city)
