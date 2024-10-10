@@ -48,7 +48,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	record, err := database.GetWeatherRecord(cityName, date)
+	record, err := database.GetWeatherRecords(cityName, date)
 	if err != nil {
 		log.Print(err)
 	}
@@ -57,7 +57,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	record, err = database.GetWeatherRecord(cityName, date)
+	record, err = database.GetWeatherRecords(cityName, date)
 	if err != nil {
 		log.Print(err)
 	}
@@ -66,7 +66,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	record, err = database.GetWeatherRecord(cityName, date)
+	record, err = database.GetWeatherRecords(cityName, date)
 	if err != nil {
 		log.Print(err)
 	}
