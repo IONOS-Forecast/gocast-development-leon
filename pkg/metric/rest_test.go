@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/db"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/metric"
@@ -65,9 +66,14 @@ func (m dbMock) SetLocationByCityName(city string) (string, error) {
 }
 
 func TestGetOK(t *testing.T) {
-	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-09&city=Berlin", nil)
+	now := time.Now()
+	date, err := utils.SetDate(now.Year(), int(now.Month()), now.Day())
+	if err != nil {
+		t.Error("handler returned error while trying to set date: ", err)
+	}
+	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date="+date+"&city=Berlin", nil)
 	rr := httptest.NewRecorder()
-	testdate := "22024-10-09T12:00:00+00:00"
+	testdate := date + "T12:00:00+00:00"
 	dbMock := dbMock{}
 	cities := map[string]model.City{"Berlin": {Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
 	record := model.WeatherRecord{Hours: []model.HourWeatherRecord{{TimeStamp: testdate, SourceID: 303712, Precipitation: 0, PressureMSL: 996.8,
@@ -93,7 +99,12 @@ func TestGetOK(t *testing.T) {
 }
 
 func TestGetOKNoData(t *testing.T) {
-	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-21&city=Berlin", nil)
+	now := time.Now()
+	date, err := utils.SetDate(now.Year(), int(now.Month()), now.Day())
+	if err != nil {
+		t.Error("handler returned error while trying to set date: ", err)
+	}
+	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date="+date+"&city=Berlin", nil)
 	rr := httptest.NewRecorder()
 	dbMock := dbMock{}
 	cities := map[string]model.City{"Berlin": {Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
@@ -118,7 +129,12 @@ func TestGetOKNoData(t *testing.T) {
 }
 
 func TestGetErrorNoCity(t *testing.T) {
-	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-21&city=Berlin", nil)
+	now := time.Now()
+	date, err := utils.SetDate(now.Year(), int(now.Month()), now.Day())
+	if err != nil {
+		t.Error("handler returned error while trying to set date: ", err)
+	}
+	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date="+date+"&city=Berlin", nil)
 	rr := httptest.NewRecorder()
 	dbMock := dbMock{}
 	cities := map[string]model.City{}
