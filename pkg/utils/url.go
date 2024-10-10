@@ -50,6 +50,13 @@ func RequestWeather() (model.WeatherRecord, error) {
 	if err != nil {
 		return model.WeatherRecord{}, fmt.Errorf("failed to unmarshal response body from URL (\"%v\"): %v", weatherAPIURL, err)
 	}
+	hours := []model.HourWeatherRecord{}
+	for k, v := range today.Hours {
+		if k <= 23 {
+			hours = append(hours, v)
+		}
+	}
+	today.Hours = hours
 	return today, nil
 }
 
@@ -98,6 +105,13 @@ func RequestFutureWeather() (model.WeatherRecord, error) {
 	if err != nil {
 		return model.WeatherRecord{}, fmt.Errorf("failed to unmarshal response body from URL (\"%v\"): %v", weatherAPIURL, err)
 	}
+	hours := []model.HourWeatherRecord{}
+	for k, v := range notToday.Hours {
+		if k <= 23 {
+			hours = append(hours, v)
+		}
+	}
+	notToday.Hours = hours
 	return notToday, nil
 }
 
