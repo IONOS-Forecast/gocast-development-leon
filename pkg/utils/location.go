@@ -56,6 +56,10 @@ func SetLocation(lat, lon float64) error {
 	}
 }
 
+func SetCity(city string) {
+	cityName = city
+}
+
 func SetLocationByCityName(name string) (string, error) {
 	cities, err := ReadCities(name, GetSavedCities())
 	if err != nil {
