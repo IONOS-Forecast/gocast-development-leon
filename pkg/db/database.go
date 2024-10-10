@@ -113,37 +113,28 @@ func (p postgresDB) GetWeatherRecords(city, date string) (model.WeatherRecord, e
 		return model.WeatherRecord{}, err
 	}
 	if !dataExists {
-		records, err := utils.GetWeatherRecordsFromFiles(city)
-		if err != nil {
-			return model.WeatherRecord{}, err
+		var records []model.WeatherRecord
+		if utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) {
+			records, err = utils.GetWeatherRecordsFromFiles(city)
+			if err != nil {
+				return model.WeatherRecord{}, err
+			}
 		}
 		if len(records) != 0 {
 			if len(records[0].Hours) != 0 {
 				timestamp := records[0].Hours[0].TimeStamp[:10]
 				if timestamp != date {
-					log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
-					today, err = utils.RequestWeather()
-					if err != nil {
-						return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
-					}
-					_, err = utils.SaveFutureWeatherInFile(city, date)
-					if err != nil {
-						return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
-					}
+					today, err = getWeatherRecordsFromAPIAndSave(city, date)
 					utils.SetDate(year, month, day)
 				}
 			} else {
-				log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
-				today, err = utils.RequestWeather()
-				if err != nil {
-					return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
-				}
-				_, err = utils.SaveFutureWeatherInFile(city, date)
-				if err != nil {
-					return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
-				}
+				today, err = getWeatherRecordsFromAPIAndSave(city, date)
 				utils.SetDate(year, month, day)
 			}
+		}
+		if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) {
+			today, err = getWeatherRecordsFromAPIAndSave(city, date)
+			utils.SetDate(year, month, day)
 		}
 		records, err = utils.GetWeatherRecordsFromFiles(city)
 		if err != nil {
@@ -173,6 +164,19 @@ func (p postgresDB) GetWeatherRecords(city, date string) (model.WeatherRecord, e
 	today, err = p.getHourWeatherRecord(city, date)
 	if err != nil {
 		return model.WeatherRecord{}, err
+	}
+	return today, nil
+}
+
+func getWeatherRecordsFromAPIAndSave(city, date string) (model.WeatherRecord, error) {
+	log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
+	today, err := utils.RequestWeather()
+	if err != nil {
+		return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
+	}
+	_, err = utils.SaveFutureWeatherInFile(city, date)
+	if err != nil {
+		return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
 	}
 	return today, nil
 }
