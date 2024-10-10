@@ -24,8 +24,12 @@ func GetCityName() string {
 	return cityName
 }
 
-func GetCities() map[string]model.City {
+func GetSavedCities() map[string]model.City {
 	cities = ReadSavedCities(cities)
+	return cities
+}
+
+func GetCities() map[string]model.City {
 	return cities
 }
 
@@ -53,7 +57,7 @@ func SetLocation(lat, lon float64) error {
 }
 
 func SetLocationByCityName(name string) (string, error) {
-	cities, err := ReadCities(name, GetCities())
+	cities, err := ReadCities(name, GetSavedCities())
 	if err != nil {
 		return "", err
 	}
