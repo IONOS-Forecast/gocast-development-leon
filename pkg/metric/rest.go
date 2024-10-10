@@ -83,9 +83,9 @@ func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
 		if record.Hours != nil && len(record.Hours) == 25 {
-			RegisterMetrics(record, 0)
-			// Method for whole day
-			// RegisterDayMetrics(record)
+			UpdateMetrics(record)
+			// UpdateMetricsDay(record) // Method for whole day
+			// UpdateMetricsNow(record) // Method for timestamp now
 		}
 	} else {
 		http.Redirect(w, r, "/error", http.StatusFound)
