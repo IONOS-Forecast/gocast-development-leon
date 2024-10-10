@@ -182,8 +182,8 @@ func SaveCityByName(name string) (string, error) {
 			return "", err
 		}
 		var citiesData []byte
-		if !strings.Contains(string(content), strings.ToLower(name)) {
-			citiesString := string(content) + "\n" + strings.ToLower(name)
+		if !strings.Contains(string(content), strings.ToLower(foundcity.Name)) {
+			citiesString := string(content) + "\n" + strings.ToLower(foundcity.Name)
 			for _, v := range []byte(citiesString) {
 				citiesData = append(citiesData, v)
 			}
