@@ -1,6 +1,8 @@
 package metric_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -65,14 +67,28 @@ func (m dbMock) SetLocationByCityName(city string) (string, error) {
 func TestGetOK(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-09&city=Berlin", nil)
 	rr := httptest.NewRecorder()
+	testdate := "22024-10-09T12:00:00+00:00"
 	dbMock := dbMock{}
 	cities := map[string]model.City{"Berlin": {Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
-	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", cities)
+	record := model.WeatherRecord{Hours: []model.HourWeatherRecord{{TimeStamp: testdate, SourceID: 303712, Precipitation: 0, PressureMSL: 996.8,
+		Sunshine: 60, Temperature: 19.6, WindDirection: 190, WindSpeed: 14, CloudCover: 100, DewPoint: 12.8, RelativeHumidity: 65, Visibility: 61300,
+		WindGustDirection: 200, WindGustSpeed: 29.5, Condition: "dry", PrecipitationProbability: 0, PrecipitationProbability6h: 0, Solar: 0, Icon: "cloudy", City: "berlin"}}}
+	dbMock.setResult(record, nil, true, "Berlin", cities)
 	cityDB := db.NewCityDB(dbMock, "")
 	h := metric.NewHandler(dbMock, cityDB, db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey))
 	h.Get(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+	if rr.Body != nil {
+		data, err := json.MarshalIndent(record, "", "  ")
+		if err != nil {
+			t.Error("handler returned error while trying to recreate data: ", err)
+		}
+		res := bytes.Compare(rr.Body.Bytes(), data)
+		if res != 0 {
+			t.Errorf("handler returned unexpected data: got %v want %v", rr.Body.Bytes(), data)
+		}
 	}
 }
 
@@ -81,12 +97,23 @@ func TestGetOKNoData(t *testing.T) {
 	rr := httptest.NewRecorder()
 	dbMock := dbMock{}
 	cities := map[string]model.City{"Berlin": {Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
-	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", cities)
+	emptyRecord := model.WeatherRecord{}
+	dbMock.setResult(emptyRecord, nil, true, "Berlin", cities)
 	cityDB := db.NewCityDB(dbMock, "")
 	h := metric.NewHandler(dbMock, cityDB, db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey))
 	h.Get(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+	if rr.Body != nil {
+		data, err := json.MarshalIndent(emptyRecord, "", "  ")
+		if err != nil {
+			t.Error("handler returned error while trying to recreate data: ", err)
+		}
+		res := bytes.Compare(rr.Body.Bytes(), data)
+		if res != 0 {
+			t.Errorf("handler returned unexpected data: got %v want %v", rr.Body.Bytes(), data)
+		}
 	}
 }
 

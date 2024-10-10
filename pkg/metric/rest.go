@@ -82,7 +82,7 @@ func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
-		if record.Hours != nil {
+		if record.Hours != nil && len(record.Hours) == 25 {
 			RegisterMetrics(record, 0)
 			// Method for whole day
 			// RegisterDayMetrics(record)
