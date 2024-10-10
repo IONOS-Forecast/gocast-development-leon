@@ -1,6 +1,10 @@
 package metric
 
 import (
+	"fmt"
+	"log"
+	"time"
+
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/model"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -37,29 +41,53 @@ func NewMetrics(reg prometheus.Registerer) *model.Metrics {
 	return m
 }
 
-func RegisterMetrics(record model.WeatherRecord, hour int) {
-	if len(record.Hours) != 0 {
-		m.Temperature.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": record.Hours[hour].TimeStamp}).Set(record.Hours[hour].Temperature)
-		m.Humidity.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": record.Hours[hour].TimeStamp}).Set(float64(record.Hours[hour].RelativeHumidity))
-		m.Windspeed.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": record.Hours[hour].TimeStamp}).Set(record.Hours[hour].WindSpeed)
-		m.Pressure.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": record.Hours[hour].TimeStamp}).Set(record.Hours[hour].PressureMSL)
-	}
-}
-
-func RegisterDayMetrics(record model.WeatherRecord) {
-	if len(record.Hours) != 0 {
-		for i := 0; i < len(record.Hours); i++ {
-			m.Temperature.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": record.Hours[i].TimeStamp}).Set(record.Hours[i].Temperature)
-			m.Humidity.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": record.Hours[i].TimeStamp}).Set(float64(record.Hours[i].RelativeHumidity))
-			m.Windspeed.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": record.Hours[i].TimeStamp}).Set(record.Hours[i].WindSpeed)
-			m.Pressure.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": record.Hours[i].TimeStamp}).Set(record.Hours[i].PressureMSL)
-		}
-	}
-}
-
 func getMetrics() *model.Metrics {
 	if m != nil {
 		return m
 	}
 	return nil
+}
+
+func UpdateMetrics(record model.WeatherRecord) {
+	_date := record.Hours[0].TimeStamp[:10]
+	now := time.Now()
+	hour := now.Hour()
+	min := now.Minute()
+	sec := now.Second()
+	date, err := time.Parse(time.RFC3339, fmt.Sprintf("%vT%.2v:%.2v:%.2v+02:00", _date, hour, min, sec))
+	if err != nil {
+		log.Print("updating metrics failed: ", err)
+	}
+	timestamp := date.Format(time.RFC3339)
+	m.Temperature.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": timestamp}).Set(record.Hours[hour].Temperature)
+	m.Humidity.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": timestamp}).Set(float64(record.Hours[hour].RelativeHumidity))
+	m.Windspeed.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": timestamp}).Set(record.Hours[hour].WindSpeed)
+	m.Pressure.With(prometheus.Labels{"location": record.Hours[hour].City, "timestamp": timestamp}).Set(record.Hours[hour].PressureMSL)
+}
+
+func UpdateMetricsDay(record model.WeatherRecord) {
+	for i := 0; i < 24; i++ {
+		_date := record.Hours[0].TimeStamp[:10]
+		now := time.Now()
+		min := now.Minute()
+		sec := now.Second()
+		date, err := time.Parse(time.RFC3339, fmt.Sprintf("%vT%.2v:%.2v:%.2v+02:00", _date, i, min, sec))
+		if err != nil {
+			log.Print("updating metrics failed: ", err)
+		}
+		timestamp := date.Format(time.RFC3339)
+		m.Temperature.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": timestamp}).Set(record.Hours[i].Temperature)
+		m.Humidity.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": timestamp}).Set(float64(record.Hours[i].RelativeHumidity))
+		m.Windspeed.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": timestamp}).Set(record.Hours[i].WindSpeed)
+		m.Pressure.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": timestamp}).Set(record.Hours[i].PressureMSL)
+	}
+}
+
+func UpdateMetricsNow(record model.WeatherRecord) {
+	now := time.Now()
+	timestamp := now.Format(time.RFC3339)
+	m.Temperature.With(prometheus.Labels{"location": record.Hours[now.Hour()].City, "timestamp": timestamp}).Set(record.Hours[now.Hour()].Temperature)
+	m.Humidity.With(prometheus.Labels{"location": record.Hours[now.Hour()].City, "timestamp": timestamp}).Set(float64(record.Hours[now.Hour()].RelativeHumidity))
+	m.Windspeed.With(prometheus.Labels{"location": record.Hours[now.Hour()].City, "timestamp": timestamp}).Set(record.Hours[now.Hour()].WindSpeed)
+	m.Pressure.With(prometheus.Labels{"location": record.Hours[now.Hour()].City, "timestamp": timestamp}).Set(record.Hours[now.Hour()].PressureMSL)
 }
