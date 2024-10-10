@@ -1,4 +1,3 @@
 berlin
-münchen
-hamburg
 munich
+hamburg
