@@ -16,10 +16,10 @@ type dbMock struct {
 	err           error
 	exists        bool
 	city          string
-	cities        []string
+	cities        map[string]model.City
 }
 
-func (m *dbMock) setResult(weatherRecord model.WeatherRecord, err error, exists bool, city string, cities []string) {
+func (m *dbMock) setResult(weatherRecord model.WeatherRecord, err error, exists bool, city string, cities map[string]model.City) {
 	m.weatherRecord = weatherRecord
 	m.err = err
 	m.exists = exists
@@ -52,19 +52,23 @@ func (m dbMock) QueryCitiesDatabase(t any, value, name string) error {
 	return m.err
 }
 func (m dbMock) GetCities() ([]model.City, error) {
-	return nil, nil
+	var cities []model.City
+	for _, value := range m.cities {
+		cities = append(cities, value)
+	}
+	return cities, nil
 }
 func (m dbMock) SetLocationByCityName(city string) (string, error) {
 	return m.city, m.err
 }
 
-func TestGet(t *testing.T) {
+func TestGetOK(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-09&city=Berlin", nil)
 	rr := httptest.NewRecorder()
 	dbMock := dbMock{}
-	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", []string{"Berlin"})
+	cities := map[string]model.City{"Berlin": {Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
+	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", cities)
 	cityDB := db.NewCityDB(dbMock, "")
-	cities := map[string]model.City{"Berlin": model.City{Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
 	h := metric.NewHandler(dbMock, cityDB, db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey))
 	h.Get(rr, req)
 	if status := rr.Code; status != http.StatusOK {
@@ -72,13 +76,27 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestGetError(t *testing.T) {
+func TestGetOKNoData(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-21&city=Berlin", nil)
 	rr := httptest.NewRecorder()
 	dbMock := dbMock{}
-	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", []string{"Berlin"})
+	cities := map[string]model.City{"Berlin": {Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
+	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", cities)
 	cityDB := db.NewCityDB(dbMock, "")
-	cities := map[string]model.City{"Berlin": model.City{Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
+	h := metric.NewHandler(dbMock, cityDB, db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey))
+	h.Get(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+}
+
+func TestGetErrorNoCity(t *testing.T) {
+	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2024-10-21&city=Berlin", nil)
+	rr := httptest.NewRecorder()
+	dbMock := dbMock{}
+	cities := map[string]model.City{}
+	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", cities)
+	cityDB := db.NewCityDB(dbMock, "")
 	h := metric.NewHandler(dbMock, cityDB, db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey))
 	h.Get(rr, req)
 	if status := rr.Code; status != http.StatusBadRequest {
@@ -86,16 +104,16 @@ func TestGetError(t *testing.T) {
 	}
 }
 
-// TODO: Fix testing
-
-/*func TestError(t *testing.T) {
-	req := httptest.NewRequest("GET", "http://localhost:8080/error", nil)
+func TestGetErrorIncorrectDate(t *testing.T) {
+	req := httptest.NewRequest("GET", "http://localhost:8080/direct?date=2008-08-25&city=Berlin", nil)
 	rr := httptest.NewRecorder()
 	dbMock := dbMock{}
-	dbMock.setResult(model.WeatherRecord{}, fmt.Errorf("error"), true, "")
-	h := metric.NewHandler(dbMock, db.NewCityDB(""))
+	cities := map[string]model.City{"Berlin": {Name: "berlin", Lat: 52.5170365, Lon: 13.3888599}}
+	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", cities)
+	cityDB := db.NewCityDB(dbMock, "")
+	h := metric.NewHandler(dbMock, cityDB, db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey))
 	h.Get(rr, req)
 	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
 	}
-}*/
+}
