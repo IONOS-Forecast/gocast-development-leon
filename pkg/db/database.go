@@ -18,7 +18,7 @@ type DBI interface {
 	GetWeatherRecord(city, date string) (model.WeatherRecord, error)
 	GetWeatherRecords(city, date string) (model.WeatherRecord, error)
 	InsertCityIntoDatabase(name string) error
-	InsertCityWeatherRecordsToTable(record model.WeatherRecord) error
+	InsertCityWeatherRecordsToTable(record model.WeatherRecord, city string) error
 	QueryCitiesDatabase(t any, value, name string) error
 	GetCities() ([]model.City, error)
 	SetLocationByCityName(city string) (string, error)
@@ -153,7 +153,7 @@ func (p postgresDB) GetWeatherRecords(city, date string) (model.WeatherRecord, e
 			return model.WeatherRecord{}, fmt.Errorf("failed to get weather records! (internal error)")
 		}
 		for i := 0; i < len(records); i++ {
-			err := p.InsertCityWeatherRecordsToTable(records[i])
+			err := p.InsertCityWeatherRecordsToTable(records[i], city)
 			if err != nil {
 				return model.WeatherRecord{}, err
 			}
@@ -184,8 +184,10 @@ func (p postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 	if err != nil {
 		return model.WeatherRecord{}, err
 	}
-	utils.SetDate(year, month, day)
-	date = utils.GetDate()
+	date, err = utils.SetDate(year, month, day)
+	if err != nil {
+		return model.WeatherRecord{}, nil
+	}
 	_, err = utils.CheckDate(date)
 	if err != nil {
 		return model.WeatherRecord{}, nil
@@ -228,7 +230,7 @@ func (p postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 		if len(record.Hours) == 0 {
 			return model.WeatherRecord{}, fmt.Errorf("failed to get weather records! (internal error)")
 		}
-		err = p.InsertCityWeatherRecordsToTable(record)
+		err = p.InsertCityWeatherRecordsToTable(record, city)
 		if err != nil {
 			return model.WeatherRecord{}, err
 		}
@@ -267,8 +269,7 @@ func (p postgresDB) getHourWeatherRecord(city, date string) (model.WeatherRecord
 	return today, nil
 }
 
-func (p postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord) error {
-	city := utils.GetCityName()
+func (p postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord, city string) error {
 	for i := 0; i < len(record.Hours); i++ {
 		record.Hours[i].City = strings.ToLower(city)
 	}
