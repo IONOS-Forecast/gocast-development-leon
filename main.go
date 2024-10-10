@@ -52,7 +52,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	metric.RegisterMetrics(record, 0)
+	metric.UpdateMetrics(record)
 	cityName, err = database.SetLocationByCityName("München")
 	if err != nil {
 		log.Print(err)
@@ -61,7 +61,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	metric.RegisterMetrics(record, 0)
+	metric.UpdateMetrics(record)
 	cityName, err = database.SetLocationByCityName("Hamburg")
 	if err != nil {
 		log.Print(err)
@@ -70,7 +70,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	metric.RegisterMetrics(record, 0)
+	metric.UpdateMetrics(record)
 	/* TODO: ADD OR REMOVE LATER
 	Error Examples and MinutesRequest
 	fmt.Println(":----------------------------------------------------------------------------:")
@@ -98,8 +98,25 @@ func main() {
 	mux.HandleFunc("/direct", handler.Get)
 	mux.HandleFunc("/error", handler.Error)
 
+	cityName, err = database.SetLocationByCityName("Berlin")
+	if err != nil {
+		log.Print(err)
+	}
+	record, err = database.GetWeatherRecord(cityName, time.Now().Format("2006-01-02"))
+	metric.UpdateMetricsNow(record)
+
 	pMux := http.NewServeMux()
 	pMux.Handle("/metrics", promHandler)
+	go func() {
+		c := time.NewTicker(10 * time.Minute)
+		for {
+			select {
+			case <-c.C:
+				record, err = database.GetWeatherRecord(cityName, time.Now().Format("2006-01-02"))
+				metric.UpdateMetricsNow(record)
+			}
+		}
+	}()
 	go func() {
 		log.Fatal(http.ListenAndServe(":8080", mux))
 	}()
