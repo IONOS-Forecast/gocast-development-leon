@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/db"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/utils"
@@ -84,7 +85,7 @@ func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
 		if record.Hours != nil && len(record.Hours) == 25 {
-			UpdateMetrics(record)
+			UpdateMetrics(record, time.Now().Hour())
 			// UpdateMetricsDay(record) // Method for whole day
 			// UpdateMetricsNow(record) // Method for timestamp now
 		}

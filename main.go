@@ -52,7 +52,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	metric.UpdateMetrics(record)
+	metric.UpdateMetrics(record, time.Now().Hour())
 	cityName, err = database.SetLocationByCityName("München")
 	if err != nil {
 		log.Print(err)
@@ -61,7 +61,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	metric.UpdateMetrics(record)
+	metric.UpdateMetrics(record, time.Now().Hour())
 	cityName, err = database.SetLocationByCityName("Hamburg")
 	if err != nil {
 		log.Print(err)
@@ -70,7 +70,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	metric.UpdateMetrics(record)
+	metric.UpdateMetrics(record, time.Now().Hour())
 	/* TODO: ADD OR REMOVE LATER
 	Error Examples and MinutesRequest
 	fmt.Println(":----------------------------------------------------------------------------:")

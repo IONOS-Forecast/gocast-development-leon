@@ -37,7 +37,7 @@ func TestUpdateMetrics(t *testing.T) {
 			WindGustDirection: 200, WindGustSpeed: 29.5, Condition: "dry", PrecipitationProbability: 0, PrecipitationProbability6h: 0, Solar: 0, Icon: "cloudy", City: "berlin"})
 	}
 	record := model.WeatherRecord{Hours: hours}
-	metric.UpdateMetrics(record)
+	metric.UpdateMetrics(record, 0)
 	temperature, err := getMetrics("gocast_temperature", testTimestamp)
 	if err != nil {
 		t.Error(err)

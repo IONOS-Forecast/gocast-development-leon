@@ -41,10 +41,9 @@ func NewMetrics(reg prometheus.Registerer) *model.Metrics {
 	return m
 }
 
-func UpdateMetrics(record model.WeatherRecord) {
+func UpdateMetrics(record model.WeatherRecord, hour int) {
 	_date := record.Hours[0].TimeStamp[:10]
 	now := time.Now()
-	hour := now.Hour()
 	min := now.Minute()
 	sec := now.Second()
 	date, err := time.Parse(time.RFC3339, fmt.Sprintf("%vT%.2v:%.2v:%.2v+02:00", _date, hour, min, sec))
@@ -60,19 +59,7 @@ func UpdateMetrics(record model.WeatherRecord) {
 
 func UpdateMetricsDay(record model.WeatherRecord) {
 	for i := 0; i < 24; i++ {
-		_date := record.Hours[0].TimeStamp[:10]
-		now := time.Now()
-		min := now.Minute()
-		sec := now.Second()
-		date, err := time.Parse(time.RFC3339, fmt.Sprintf("%vT%.2v:%.2v:%.2v+02:00", _date, i, min, sec))
-		if err != nil {
-			log.Print("updating metrics failed: ", err)
-		}
-		timestamp := date.Format(time.RFC3339)
-		m.Temperature.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": timestamp}).Set(record.Hours[i].Temperature)
-		m.Humidity.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": timestamp}).Set(float64(record.Hours[i].RelativeHumidity))
-		m.Windspeed.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": timestamp}).Set(record.Hours[i].WindSpeed)
-		m.Pressure.With(prometheus.Labels{"location": record.Hours[i].City, "timestamp": timestamp}).Set(record.Hours[i].PressureMSL)
+		UpdateMetrics(record, i)
 	}
 }
 
