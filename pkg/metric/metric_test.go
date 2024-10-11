@@ -25,7 +25,8 @@ func TestUpdateMetrics(t *testing.T) {
 	go func() {
 		log.Fatal(http.ListenAndServe(":8081", pMux))
 	}()
-	testTimestamp := fmt.Sprintf("2024-10-02T%.2v:00:00+00:00", time.Now().Hour())
+	hour := time.Now().Hour()
+	testTimestamp := fmt.Sprintf("2024-10-02T%.2v:00:00+00:00", hour)
 	expectedTemperature := 19.6
 	expectedWindSpeed := 14.0
 	expectedHumidity := 65
@@ -37,7 +38,7 @@ func TestUpdateMetrics(t *testing.T) {
 			WindGustDirection: 200, WindGustSpeed: 29.5, Condition: "dry", PrecipitationProbability: 0, PrecipitationProbability6h: 0, Solar: 0, Icon: "cloudy", City: "berlin"})
 	}
 	record := model.WeatherRecord{Hours: hours}
-	metric.UpdateMetrics(record, 0)
+	metric.UpdateMetrics(record, hour)
 	temperature, err := getMetrics("gocast_temperature", testTimestamp)
 	if err != nil {
 		t.Error(err)
@@ -50,21 +51,21 @@ func TestUpdateMetrics(t *testing.T) {
 		t.Error(err)
 	}
 	if humidity != float64(expectedHumidity) {
-		t.Errorf("metrics returned wrong temperature: got \"%v\" want \"%v\"", humidity, expectedHumidity)
+		t.Errorf("metrics returned wrong humidity: got \"%v\" want \"%v\"", humidity, expectedHumidity)
 	}
 	windspeed, err := getMetrics("gocast_wind_speed", testTimestamp)
 	if err != nil {
 		t.Error(err)
 	}
 	if windspeed != expectedWindSpeed {
-		t.Errorf("metrics returned wrong temperature: got \"%v\" want \"%v\"", windspeed, expectedWindSpeed)
+		t.Errorf("metrics returned wrong windspeed: got \"%v\" want \"%v\"", windspeed, expectedWindSpeed)
 	}
 	pressure, err := getMetrics("gocast_pressure", testTimestamp)
 	if err != nil {
 		t.Error(err)
 	}
 	if pressure != expectedPressure {
-		t.Errorf("metrics returned wrong temperature: got \"%v\" want \"%v\"", pressure, expectedPressure)
+		t.Errorf("metrics returned wrong pressure: got \"%v\" want \"%v\"", pressure, expectedPressure)
 	}
 	t.Run("checking for unexpected errors", func(t *testing.T) {
 		expected := 0.0
