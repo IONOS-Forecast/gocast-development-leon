@@ -3,6 +3,7 @@ package metric_test
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -141,6 +142,7 @@ func TestGetErrorNoCity(t *testing.T) {
 	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", cities)
 	cityDB := db.NewCityDB(dbMock, "")
 	h := metric.NewHandler(dbMock, cityDB, db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey))
+	log.Print("INFO: 1 Error following")
 	h.Get(rr, req)
 	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
@@ -155,6 +157,7 @@ func TestGetErrorIncorrectDate(t *testing.T) {
 	dbMock.setResult(model.WeatherRecord{}, nil, true, "Berlin", cities)
 	cityDB := db.NewCityDB(dbMock, "")
 	h := metric.NewHandler(dbMock, cityDB, db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey))
+	log.Print("INFO: 1 warning & 1 error following")
 	h.Get(rr, req)
 	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
