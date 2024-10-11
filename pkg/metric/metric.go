@@ -41,13 +41,6 @@ func NewMetrics(reg prometheus.Registerer) *model.Metrics {
 	return m
 }
 
-func getMetrics() *model.Metrics {
-	if m != nil {
-		return m
-	}
-	return nil
-}
-
 func UpdateMetrics(record model.WeatherRecord) {
 	_date := record.Hours[0].TimeStamp[:10]
 	now := time.Now()
