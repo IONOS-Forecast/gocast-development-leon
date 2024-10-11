@@ -2,10 +2,11 @@ package utils
 
 import (
 	"fmt"
+	"net/url"
 	"testing"
 )
 
-func TestGetWeatherAPIKeyAPIURL(t *testing.T) {
+func TestGetWeatherAPIURL(t *testing.T) {
 	expectedURL := Options.WeatherAPIURL
 	SetWeatherAPIURL(expectedURL)
 	url := GetWeatherAPIURL()
@@ -15,15 +16,23 @@ func TestGetWeatherAPIKeyAPIURL(t *testing.T) {
 }
 
 func TestGetGeocodingAPIURL(t *testing.T) {
-	expectedURL := Options.GeoAPIURL
-	SetWeatherAPIURL(expectedURL)
+	expectedURL := "TestURL"
+	SetGeocodingAPIURL(expectedURL)
 	url := GetGeocodingAPIURL()
 	if url != expectedURL {
 		t.Errorf("GetGeocodingAPIURL() returned wrong url: got \"%v\" want \"%v\"", url, expectedURL)
 	}
 }
 
-func TestSetWeatherAPIKeyAPIURL(t *testing.T) {
+func TestSetGeocodingAPIKey(t *testing.T) {
+	expectedKey := "API_KEY"
+	SetGeocodingAPIKey(expectedKey)
+	if geocodingAPIKey != expectedKey {
+		t.Errorf("ReloadWeatherURL() returned wrong key: got \"%v\" want \"%v\"", geocodingAPIKey, expectedKey)
+	}
+}
+
+func TestSetWeatherAPIURL(t *testing.T) {
 	expectedURL := "TestURL"
 	SetWeatherAPIURL(expectedURL)
 	if weatherAPIURL != expectedURL {
@@ -84,7 +93,6 @@ func TestReloadGeocodingURL(t *testing.T) {
 	if GetGeocodingAPIURL() != expectedURL {
 		t.Errorf("ReloadGeocodingURL() returned wrong url: got \"%v\" want \"%v\"", geocodingAPIURL, expectedURL)
 	}
-	// TODO: München doesnt work because of special character 'ü'
 	expectedURL, err = reloadGeoURL("München")
 	if err != nil {
 		t.Error("ReloadWeatherURL() returned an error: ", err)
@@ -100,5 +108,5 @@ func reloadWeatherURL(date string, lat, lon float64) (string, error) {
 
 func reloadGeoURL(city string) (string, error) {
 	SetGeocodingAPIKey("API_KEY")
-	return fmt.Sprintf("https://api.com/geo?appid=%v&q=%v", geocodingAPIKey, city), ReloadGeoURL(city)
+	return fmt.Sprintf("https://api.com/geo?appid=%v&q=%s", geocodingAPIKey, url.QueryEscape(city)), ReloadGeoURL(city)
 }
