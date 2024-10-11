@@ -84,7 +84,7 @@ func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
-		if record.Hours != nil && len(record.Hours) == 25 {
+		if record.Hours != nil && len(record.Hours) == 24 {
 			UpdateMetrics(record, time.Now().Hour())
 			// UpdateMetricsDay(record) // Method for whole day
 			// UpdateMetricsNow(record) // Method for timestamp now
