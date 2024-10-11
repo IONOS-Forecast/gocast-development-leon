@@ -16,6 +16,9 @@ stopdb:
 build:
 	GOOS=linux GOARCH=amd64 CGO_ENABlED=0 go build -o bin/gocast .
 
+test: # Use "go tool cover -html=./bin/metrictests.out" in terminal to open coverage in web (Open it in Chrome, Firefox doesn't work because it is not based on chromium)
+	go test ./pkg/metric/ ./pkg/utils/ -cover -coverprofile ./bin/metrictests.out
+
 run:
 	make startdb
 	sleep 2
