@@ -2,56 +2,48 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"testing"
 )
 
 func TestSetLocation(t *testing.T) {
-	expectedLat := 52.5170365
-	expectedLon := 13.3888599
-	err := SetLocation(expectedLat, expectedLon)
-	if err != nil {
-		t.Error("SetLocation() in TestGetLocation() returned an unexpected error: ", err)
+	tests := []struct {
+		expectedLat float64
+		expectedLon float64
+		wantErr     bool
+	}{
+		{52.5170365, 13.3888599, false},
+		{48.1371079, 11.5753822, false},
+		{19, 63, true},
+		{49, 29, true},
 	}
-	lat, lon, err := GetLocation()
-	if err != nil {
-		t.Error("GetLocation() returned an unexpected error: ", err)
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("Test-%v", i), func(t *testing.T) {
+			if tt.wantErr {
+				log.Print("Checking for unexpected errors...")
+				expectedError := fmt.Errorf("location (Lat: \"%v\" Lon: \"%v\") is not in range!", tt.expectedLat, tt.expectedLon).Error()
+				err := SetLocation(tt.expectedLat, tt.expectedLon)
+				if err == nil || err.Error() != expectedError {
+					t.Error("SetLocation() returned an unexpected error: ", err)
+				}
+				log.Print("No unexpected errors found")
+			} else {
+				err := SetLocation(tt.expectedLat, tt.expectedLon)
+				if err != nil {
+					t.Error("SetLocation() in TestGetLocation() returned an unexpected error: ", err)
+				}
+				lat, lon, err := GetLocation()
+				if err != nil {
+					t.Error("GetLocation() returned an unexpected error: ", err)
+				}
+				if lat != tt.expectedLat {
+					t.Errorf("GetLoation() returned wrong latitude: got \"%v\" want \"%v\"", lat, tt.expectedLat)
+				}
+				if lon != tt.expectedLon {
+					t.Errorf("GetLoation() returned wrong longitude: got \"%v\" want \"%v\"", lon, tt.expectedLon)
+				}
+			}
+		})
 	}
-	if lat != expectedLat {
-		t.Errorf("GetLoation() returned wrong latitude: got \"%v\" want \"%v\"", lat, expectedLat)
-	}
-	if lon != expectedLon {
-		t.Errorf("GetLoation() returned wrong longitude: got \"%v\" want \"%v\"", lon, expectedLon)
-	}
-	expectedLat = 48.1371079
-	expectedLon = 11.5753822
-	err = SetLocation(expectedLat, expectedLon)
-	if err != nil {
-		t.Error("SetLocation() in TestGetLocation() returned an unexpected error: ", err)
-	}
-	lat, lon, err = GetLocation()
-	if err != nil {
-		t.Error("GetLocation() returned an unexpected error: ", err)
-	}
-	if lat != expectedLat {
-		t.Errorf("GetLoation() returned wrong latitude: got \"%v\" want \"%v\"", lat, expectedLat)
-	}
-	if lon != expectedLon {
-		t.Errorf("GetLoation() returned wrong longitude: got \"%v\" want \"%v\"", lon, expectedLon)
-	}
-	t.Run("checking for unexpected errors", func(t *testing.T) {
-		expectedLat = 19
-		expectedLon = 63
-		expectedError := fmt.Errorf("location (Lat: \"%v\" Lon: \"%v\") is not in range!", expectedLat, expectedLon).Error()
-		err = SetLocation(expectedLat, expectedLon)
-		if err == nil || err.Error() != expectedError {
-			t.Error("SetLocation() returned an unexpected error: ", err)
-		}
-		expectedLat = 49
-		expectedLon = 29
-		expectedError = fmt.Errorf("location (Lat: \"%v\" Lon: \"%v\") is not in range!", expectedLat, expectedLon).Error()
-		err = SetLocation(expectedLat, expectedLon)
-		if err == nil || err.Error() != expectedError {
-			t.Error("SetLocation() returned an unexpected error: ", err)
-		}
-	})
 }
