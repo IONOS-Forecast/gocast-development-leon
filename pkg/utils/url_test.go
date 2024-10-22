@@ -49,30 +49,28 @@ func TestSetGeocodingAPIURL(t *testing.T) {
 }
 
 func TestReloadWeatherURL(t *testing.T) {
-	url := "https://api.com/weather?date=2010-12-31&lat=28&lon=5.8"
-	SetWeatherAPIURL(url)
-	expectedURL, err := reloadWeatherURL("2024-08-25", 52.52, 13.39)
-	if err != nil {
-		t.Error("ReloadWeatherURL() returned an error: ", err)
-	}
-	if GetWeatherAPIURL() != expectedURL {
-		t.Errorf("ReloadWeatherURL() returned wrong url: got \"%v\" want \"%v\"", weatherAPIURL, expectedURL)
-	}
-
-	expectedURL, err = reloadWeatherURL("2018-05-01", 53.55, 10.00)
-	if err != nil {
-		t.Error("ReloadWeatherURL() returned an error: ", err)
-	}
-	if GetWeatherAPIURL() != expectedURL {
-		t.Errorf("ReloadWeatherURL() returned wrong url: got \"%v\" want \"%v\"", weatherAPIURL, expectedURL)
+	tests := []struct {
+		date string
+		lat  float64
+		lon  float64
+	}{
+		{"2024-08-25", 52.52, 13.39},
+		{"2018-05-01", 53.55, 10.00},
+		{"2015-12-31", 48.14, 11.58},
 	}
 
-	expectedURL, err = reloadWeatherURL("2015-12-31", 48.14, 11.58)
-	if err != nil {
-		t.Error("ReloadWeatherURL() returned an error: ", err)
-	}
-	if GetWeatherAPIURL() != expectedURL {
-		t.Errorf("ReloadWeatherURL() returned wrong url: got \"%v\" want \"%v\"", weatherAPIURL, expectedURL)
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("Test-%v", i), func(t *testing.T) {
+			defaultURL := "https://api.com/weather?date=2010-12-31&lat=28&lon=5.8"
+			SetWeatherAPIURL(defaultURL)
+			expectedURL, err := reloadWeatherURL("2024-08-25", tt.lat, tt.lon)
+			if err != nil {
+				t.Error("ReloadWeatherURL() returned an error: ", err)
+			}
+			if GetWeatherAPIURL() != expectedURL {
+				t.Errorf("ReloadWeatherURL() returned wrong url: got \"%v\" want \"%v\"", weatherAPIURL, expectedURL)
+			}
+		})
 	}
 }
 
