@@ -75,28 +75,33 @@ func TestReloadWeatherURL(t *testing.T) {
 }
 
 func TestReloadGeocodingURL(t *testing.T) {
-	url := "https://api.com/geo?appid=KEY&q=Brandenburg"
-	SetGeocodingAPIURL(url)
-	expectedURL, err := reloadGeoURL("Berlin")
-	if err != nil {
-		t.Error("ReloadWeatherURL() returned an error: ", err)
+	tests := []struct {
+		city string
+	}{
+		{"Berlin"},
+		{"München"},
+		{"Hamburg"},
+		{"Köln"},
+		{"Frankfurt am Main"},
+		{"Stuttgart"},
+		{"Düsseldorf"},
+		{"Leipzig"},
+		{"Dresden"},
+		{"Nürnberg"},
 	}
-	if GetGeocodingAPIURL() != expectedURL {
-		t.Errorf("ReloadGeocodingURL() returned wrong url: got \"%v\" want \"%v\"", geocodingAPIURL, expectedURL)
-	}
-	expectedURL, err = reloadGeoURL("Hamburg")
-	if err != nil {
-		t.Error("ReloadWeatherURL() returned an error: ", err)
-	}
-	if GetGeocodingAPIURL() != expectedURL {
-		t.Errorf("ReloadGeocodingURL() returned wrong url: got \"%v\" want \"%v\"", geocodingAPIURL, expectedURL)
-	}
-	expectedURL, err = reloadGeoURL("München")
-	if err != nil {
-		t.Error("ReloadWeatherURL() returned an error: ", err)
-	}
-	if GetGeocodingAPIURL() != expectedURL {
-		t.Errorf("ReloadGeocodingURL() returned wrong url: got \"%v\" want \"%v\"", geocodingAPIURL, expectedURL)
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("Test-%v", i), func(t *testing.T) {
+			defaultURL := "https://api.com/geo?appid=KEY&q=Brandenburg"
+			SetGeocodingAPIURL(defaultURL)
+			expectedURL, err := reloadGeoURL(tt.city)
+			if err != nil {
+				t.Error("ReloadWeatherURL() returned an error: ", err)
+			}
+			if GetGeocodingAPIURL() != expectedURL {
+				t.Errorf("ReloadGeocodingURL() returned wrong url: got \"%v\" want \"%v\"", geocodingAPIURL, expectedURL)
+			}
+		})
 	}
 }
 
