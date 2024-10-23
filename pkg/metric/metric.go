@@ -43,10 +43,10 @@ func NewMetrics(reg prometheus.Registerer) *model.Metrics {
 
 func UpdateMetrics(record model.WeatherRecord, hour int) {
 	_date := record.Hours[0].TimeStamp[:10]
-	now := time.Now()
+	now := time.Now().UTC()
 	min := now.Minute()
 	sec := now.Second()
-	date, err := time.Parse(time.RFC3339, fmt.Sprintf("%vT%.2v:%.2v:%.2v+02:00", _date, hour, min, sec))
+	date, err := time.Parse(time.RFC3339, fmt.Sprintf("%vT%.2v:%.2v:%.2vZ", _date, hour, min, sec))
 	if err != nil {
 		log.Print("updating metrics failed: ", err)
 	}
@@ -64,7 +64,7 @@ func UpdateMetricsDay(record model.WeatherRecord) {
 }
 
 func UpdateMetricsNow(record model.WeatherRecord) {
-	now := time.Now()
+	now := time.Now().UTC()
 	timestamp := now.Format(time.RFC3339)
 	m.Temperature.With(prometheus.Labels{"location": record.Hours[now.Hour()].City, "timestamp": timestamp}).Set(record.Hours[now.Hour()].Temperature)
 	m.Humidity.With(prometheus.Labels{"location": record.Hours[now.Hour()].City, "timestamp": timestamp}).Set(float64(record.Hours[now.Hour()].RelativeHumidity))
