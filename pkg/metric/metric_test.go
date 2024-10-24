@@ -1,9 +1,7 @@
 package metric_test
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"testing"
@@ -94,13 +92,13 @@ func getMetrics(metricName, timestamp, city string) (float64, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	/*body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return 0, err
 	}
-	reader := bytes.NewReader(body)
+	reader := bytes.NewReader(body)*/
 	var parser expfmt.TextParser
-	metrics, err := parser.TextToMetricFamilies(reader)
+	metrics, err := parser.TextToMetricFamilies(resp.Body)
 	if err != nil {
 		return 0, err
 	}
