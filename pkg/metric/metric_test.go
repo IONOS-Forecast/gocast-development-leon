@@ -39,28 +39,28 @@ func TestUpdateMetrics(t *testing.T) {
 	}
 	record := model.WeatherRecord{Hours: hours}
 	metric.UpdateMetrics(record, hour)
-	temperature, err := getMetrics("gocast_temperature", testTimestamp)
+	temperature, err := getMetrics("gocast_temperature", testTimestamp, record.Hours[0].City)
 	if err != nil {
 		t.Error(err)
 	}
 	if temperature != expectedTemperature {
 		t.Errorf("metrics returned wrong temperature: got \"%v\" want \"%v\"", temperature, expectedTemperature)
 	}
-	humidity, err := getMetrics("gocast_humidity", testTimestamp)
+	humidity, err := getMetrics("gocast_humidity", testTimestamp, record.Hours[0].City)
 	if err != nil {
 		t.Error(err)
 	}
 	if humidity != float64(expectedHumidity) {
 		t.Errorf("metrics returned wrong humidity: got \"%v\" want \"%v\"", humidity, expectedHumidity)
 	}
-	windspeed, err := getMetrics("gocast_wind_speed", testTimestamp)
+	windspeed, err := getMetrics("gocast_wind_speed", testTimestamp, record.Hours[0].City)
 	if err != nil {
 		t.Error(err)
 	}
 	if windspeed != expectedWindSpeed {
 		t.Errorf("metrics returned wrong windspeed: got \"%v\" want \"%v\"", windspeed, expectedWindSpeed)
 	}
-	pressure, err := getMetrics("gocast_pressure", testTimestamp)
+	pressure, err := getMetrics("gocast_pressure", testTimestamp, record.Hours[0].City)
 	if err != nil {
 		t.Error(err)
 	}
@@ -70,14 +70,14 @@ func TestUpdateMetrics(t *testing.T) {
 	t.Run("checking for unexpected errors", func(t *testing.T) {
 		expected := 0.0
 		expectedError := "metrics found no values!"
-		test, err := getMetrics("gocast_failed", testTimestamp)
+		test, err := getMetrics("gocast_failed", testTimestamp, record.Hours[0].City)
 		if err == nil || err.Error() != expectedError {
 			t.Error(err)
 		}
 		if test != expected {
 			t.Errorf("metrics returned unexpected result: got \"%v\" want \"%v\"", pressure, expected)
 		}
-		test, err = getMetrics("gocast_test", testTimestamp)
+		test, err = getMetrics("gocast_test", testTimestamp, record.Hours[0].City)
 		if err == nil || err.Error() != expectedError {
 			t.Error(err)
 		}
@@ -87,7 +87,7 @@ func TestUpdateMetrics(t *testing.T) {
 	})
 }
 
-func getMetrics(metricName, timestamp string) (float64, error) {
+func getMetrics(metricName, timestamp, city string) (float64, error) {
 	resp, err := http.Get("http://localhost:8081/metrics")
 	if err != nil {
 		return 0, err
@@ -104,10 +104,16 @@ func getMetrics(metricName, timestamp string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
+	_city := false
 	if metricFamily, ok := metrics[metricName]; ok {
 		for _, metric := range metricFamily.GetMetric() {
 			for _, label := range metric.GetLabel() {
-				if label.GetName() == "timestamp" && label.GetValue()[:13] == timestamp[:13] {
+				if label.GetName() == "location" && len(label.GetValue()) != 0 {
+					if label.GetValue() == city {
+						_city = true
+					}
+				}
+				if label.GetName() == "timestamp" && label.GetValue()[:13] == timestamp[:13] && _city {
 					return metric.GetGauge().GetValue(), nil
 				}
 			}
