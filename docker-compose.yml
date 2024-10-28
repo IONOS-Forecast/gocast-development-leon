@@ -1,0 +1,56 @@
+services:
+  grafana:
+    image: grafana/grafana:6.1.6
+    container_name: grafana
+    restart: always
+    user: "104"
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    ports:
+      - 9090:9090
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - weather
+
+  weather:
+    build: .
+    image: weather
+    container_name: weather
+    restart: always
+    # CHANGE_ME: port should match the port you exposed with ListenAndServe, i.e.
+    # if you exposed 6789 the line below should be "8080:6789"
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      FDB_DATABASE: "forecast"
+      FDB_USER: "forecast"
+      FDB_PASSWORD: "forecast"
+      FDB_ADDRESS: "forecastDB:5432"
+    depends_on:
+      - forecastDB
+
+  forecastDB:
+    image: postgres:16-alpine
+    container_name: forecastDB
+    ports:
+      - "5544:5432"
+    environment:
+      POSTGRES_DB: forecast
+      POSTGRES_USER: forecast
+      POSTGRES_PASSWORD: forecast
+    volumes:
+      - ./resources/pg/init/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./resources/pg/data:/usr/pgdata
