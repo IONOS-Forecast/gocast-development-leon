@@ -113,6 +113,9 @@ func main() {
 			select {
 			case <-c.C:
 				record, err = database.GetWeatherRecord(cityName, time.Now().Format("2006-01-02"))
+				if err != nil {
+					log.Print(err)
+				}
 				metric.UpdateMetricsNow(record)
 			}
 		}

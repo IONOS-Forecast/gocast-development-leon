@@ -1,7 +1,7 @@
 .PHONY: startdb
 
 startdb:
-	@docker run -d --rm \
+	@docker run --network gocast-development_google -d --rm \
 			--volume "./resources/pg/init/init.sql:/docker-entrypoint-initdb.d/init.sql" \
 			--volume "./resources/pg/data:/usr/pgdata" \
 			--name=forecastDB \
