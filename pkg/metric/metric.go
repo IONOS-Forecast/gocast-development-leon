@@ -7,6 +7,7 @@ import (
 
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/model"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 var m *model.Metrics
@@ -38,6 +39,9 @@ func NewMetrics(reg prometheus.Registerer) *model.Metrics {
 	reg.MustRegister(m.Humidity)
 	reg.MustRegister(m.Windspeed)
 	reg.MustRegister(m.Pressure)
+	reg.MustRegister(collectors.NewBuildInfoCollector())
+	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	reg.MustRegister(collectors.NewGoCollector())
 	return m
 }
 
