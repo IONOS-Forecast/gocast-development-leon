@@ -67,6 +67,7 @@ func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 		}
 		h.db.QueryCitiesDatabase(&city, "name", city)
 		if city == "" {
+			log.Print(fmt.Errorf("city is empty"))
 			http.Redirect(w, r, "/error", http.StatusFound)
 			return
 		}
@@ -90,6 +91,7 @@ func (h handler) Get(w http.ResponseWriter, r *http.Request) {
 			// UpdateMetricsNow(record) // Method for timestamp now
 		}
 	} else {
+		log.Print(fmt.Errorf("date or city isn't set"))
 		http.Redirect(w, r, "/error", http.StatusFound)
 		return
 	}
