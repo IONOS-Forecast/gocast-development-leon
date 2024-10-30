@@ -1,5 +1,7 @@
 package model
 
+import "github.com/prometheus/client_golang/prometheus"
+
 type WeatherRecord struct {
 	Hours []HourWeatherRecord `json:"weather"`
 }
@@ -51,4 +53,11 @@ type Options struct {
 	FdbPassword    string `v:"fdb-p" long:"fdb_password" env:"FDB_PASSWORD" description:"The password to the user for connecting to the forecast-database"`
 	FdbDatabase    string `v:"fdb-db" long:"fdb_database" env:"FDB_DATABASE" description:"The database that the user connects to"`
 	FdbAddress     string `v:"fdb-addr" long:"fdb_address" env:"FDB_ADDRESS" description:"The address of the database"`
+}
+
+type Metrics struct {
+	Temperature *prometheus.GaugeVec
+	Humidity    *prometheus.GaugeVec
+	Windspeed   *prometheus.GaugeVec
+	Pressure    *prometheus.GaugeVec
 }

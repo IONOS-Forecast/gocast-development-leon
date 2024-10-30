@@ -24,8 +24,12 @@ func GetCityName() string {
 	return cityName
 }
 
-func GetCities() map[string]model.City {
+func GetSavedCities() map[string]model.City {
 	cities = ReadSavedCities(cities)
+	return cities
+}
+
+func GetCities() map[string]model.City {
 	return cities
 }
 
@@ -52,8 +56,12 @@ func SetLocation(lat, lon float64) error {
 	}
 }
 
+func SetCity(city string) {
+	cityName = city
+}
+
 func SetLocationByCityName(name string) (string, error) {
-	cities, err := ReadCities(name, GetCities())
+	cities, err := ReadCities(name, GetSavedCities())
 	if err != nil {
 		return "", err
 	}
@@ -67,7 +75,7 @@ func SetLocationByCityName(name string) (string, error) {
 	} else { // When the city doesn't exist
 		log.Printf("INFO: City (\"%v\") doesn't exist!", strings.ToLower(name))
 		log.Printf("INFO: Getting city (\"%v\") from API!", strings.ToLower(name))
-		cityName, err := SaveCityByName(city.Name)
+		cityName, err := SaveCityByName(name)
 		if err != nil {
 			return "", err
 		}
@@ -83,11 +91,7 @@ func SetLocationByCityName(name string) (string, error) {
 func ReadCities(name string, cities map[string]model.City) (map[string]model.City, error) {
 	file, err := os.Open("resources/data/cities.json")
 	if err != nil {
-		_, err = SaveCityByName(name)
-		if err != nil {
-			return map[string]model.City{}, err
-		}
-		return ReadCities(name, cities)
+		return map[string]model.City{}, err
 	}
 	defer file.Close()
 
@@ -102,14 +106,14 @@ func ReadCities(name string, cities map[string]model.City) (map[string]model.Cit
 func ReadSavedCities(cities map[string]model.City) map[string]model.City {
 	file, err := os.Open("resources/data/cities.json")
 	if err != nil {
-		return ReadSavedCities(cities)
+		return map[string]model.City{}
 	}
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&cities)
 	if err != nil {
-		panic(err)
+		return map[string]model.City{}
 	}
 	return cities
 }
@@ -151,7 +155,6 @@ func SaveCityByName(name string) (string, error) {
 		return "", err
 	}
 	cities[strings.ToLower(name)] = model.City{Name: foundcity.Name, Lat: foundcity.Latitude, Lon: foundcity.Longitude}
-	cityName = foundcity.Name
 	data, err := json.MarshalIndent(cities, "", "  ")
 	if err != nil {
 		cityName = oldCityName
@@ -179,8 +182,8 @@ func SaveCityByName(name string) (string, error) {
 			return "", err
 		}
 		var citiesData []byte
-		if !strings.Contains(string(content), strings.ToLower(name)) {
-			citiesString := string(content) + "\n" + strings.ToLower(name)
+		if !strings.Contains(string(content), strings.ToLower(foundcity.Name)) {
+			citiesString := string(content) + "\n" + strings.ToLower(foundcity.Name)
 			for _, v := range []byte(citiesString) {
 				citiesData = append(citiesData, v)
 			}

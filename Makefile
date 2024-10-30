@@ -1,7 +1,7 @@
 .PHONY: startdb
 
 startdb:
-	@docker run -d --rm \
+	@docker run --network gocast-development_google -d --rm \
 			--volume "./resources/pg/init/init.sql:/docker-entrypoint-initdb.d/init.sql" \
 			--volume "./resources/pg/data:/usr/pgdata" \
 			--name=forecastDB \
@@ -16,7 +16,14 @@ stopdb:
 build:
 	GOOS=linux GOARCH=amd64 CGO_ENABlED=0 go build -o bin/gocast .
 
-run-test:
-	make startdb
-	go run main.go \
-	./scripts/convert.sh \
+test: # Use "go tool cover -html=./bin/metrictests.out" in terminal to open coverage in web (Open it in Chrome, Firefox doesn't work because it is not based on chromium)
+	go test ./pkg/metric/ ./pkg/utils/ -cover -coverprofile ./bin/metrictests.out
+
+run:
+	docker-compose up
+
+run2:
+	go run main.go
+
+stop:
+	docker-compose down

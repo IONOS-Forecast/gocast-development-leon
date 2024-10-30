@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -33,9 +34,10 @@ func SetDate(year, month, day int) (string, error) {
 	now := time.Now()
 	_date := fmt.Sprintf("%v-%.2v-%.2v", year, month, day)
 	_, err := CheckDate(_date)
-	if err != nil { // What happens when date is invalid
+	if err != nil {
 		date = now.Format("2006-01-02")
-		return date, fmt.Errorf("date (\"%v\") invalid! WARNING: Date set to today (\"%v\")", _date, date)
+		log.Printf("WARNING: Date set to today (\"%v\")", date)
+		return date, fmt.Errorf("%v", err)
 	}
 	if year >= 2010 && year <= now.Year() && month >= 1 && month <= 12 && day >= 1 && day <= 31 {
 		date = _date
@@ -63,20 +65,20 @@ func SetDate(year, month, day int) (string, error) {
 func SetFutureDay(newDate, oldDate, count string) (string, string, error) {
 	_count, err := strconv.Atoi(count)
 	if err != nil {
-		return newDate, count, fmt.Errorf("converting counter failed: %v", err)
+		return oldDate, count, fmt.Errorf("converting counter failed: %v", err)
 	}
 	year, month, day, err := SplitDate(oldDate)
 	if err != nil {
-		return newDate, count, err
+		return oldDate, count, err
 	}
 	_count += 1
 	day = day + _count
 	count = strconv.Itoa(_count)
-	_, err = SetDate(year, month, day)
+	date, err := SetDate(year, month, day)
 	if err != nil {
-		return "", "", err
+		return date, "", err
 	}
-	return fmt.Sprintf("%v-%.2v-%.2v", year, month, day), count, nil
+	return date, count, nil
 }
 
 func CheckDate(s string) (time.Time, error) {

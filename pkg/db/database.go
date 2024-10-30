@@ -11,30 +11,25 @@ import (
 	"github.com/go-pg/pg/v10"
 )
 
-var pgDB pg.DB
-
 type DBI interface {
-	Query(city, date string)
-}
-
-func (f postgresDB) query(t any, value, city, date string, hour int) error {
-	err := f.QueryDatabase(&t, value, date, hour, city)
-	return err
-}
-
-func (f postgresDB) getDay(city, date string) (model.WeatherRecord, error) {
-	var today model.WeatherRecord
-	records, err := f.QueryDayDatabase(city, date)
-	today.Hours = records
-	return today, err
+	QueryDayDatabase(city, date string) ([]model.HourWeatherRecord, error)
+	QueryDatabase(t any, value string, date string, hour int, city string) error
+	WeatherDataExists(city, date string) (bool, error)
+	GetWeatherRecord(city, date string) (model.WeatherRecord, error)
+	GetWeatherRecords(city, date string) (model.WeatherRecord, error)
+	InsertCityIntoDatabase(name string) error
+	InsertCityWeatherRecordsToTable(record model.WeatherRecord, city string) error
+	QueryCitiesDatabase(t any, value, name string) error
+	GetCities() ([]model.City, error)
+	SetLocationByCityName(city string) (string, error)
 }
 
 type postgresDB struct {
 	pgDB pg.DB
 }
 
-func NewPG(user, password, name, address string) (postgresDB, error) {
-	pgDB = connectToDatabase(user, password, name, address)
+func NewPG(user, password, name, address string) (DBI, error) {
+	pgDB := connectToDatabase(user, password, name, address)
 	return postgresDB{pgDB: pgDB}, nil
 }
 
@@ -49,7 +44,7 @@ func connectToDatabase(user, password, database, address string) pg.DB {
 	return *db
 }
 
-func (f postgresDB) QueryDayDatabase(city string, date string) ([]model.HourWeatherRecord, error) {
+func (p postgresDB) QueryDayDatabase(city string, date string) ([]model.HourWeatherRecord, error) {
 	var res []model.HourWeatherRecord
 	year, month, day, err := utils.SplitDate(date)
 	if err != nil {
@@ -59,7 +54,7 @@ func (f postgresDB) QueryDayDatabase(city string, date string) ([]model.HourWeat
 		return []model.HourWeatherRecord{}, fmt.Errorf("failed to query Database because city isn't set!")
 	}
 	query := fmt.Sprintf("timestamp::date='%v-%.2v-%.2v 00:00:00+00' AND city='%v'", year, month, day, city)
-	err = pgDB.Model().Table("weather_records").
+	err = p.pgDB.Model().Table("weather_records").
 		Column("timestamp", "source_id", "precipitation", "pressure_msl", "sunshine", "temperature",
 			"wind_direction", "wind_speed", "cloud_cover", "dew_point", "relative_humidity", "visibility",
 			"wind_gust_direction", "wind_gust_speed", "condition", "precipitation_probability",
@@ -72,23 +67,29 @@ func (f postgresDB) QueryDayDatabase(city string, date string) ([]model.HourWeat
 	return res, nil
 }
 
-func (f postgresDB) QueryDatabase(t any, value string, date string, hour int, city string) error {
+func (p postgresDB) QueryDatabase(t any, value string, date string, hour int, city string) error {
 	year, month, day, err := utils.SplitDate(date)
 	if err != nil {
 		return fmt.Errorf("failed to query Database (date failure): %v", city)
 	}
 	query := fmt.Sprintf("SELECT %v FROM weather_records WHERE timestamp='%v-%.2v-%.2v %.2v:00:00+00' AND city='%v'", value, year, month, day, hour, city)
-	_, err = pgDB.Query(pg.Scan(&t), query)
+	_, err = p.pgDB.Query(pg.Scan(&t), query)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (f postgresDB) WeatherDataExists(city, date string) (bool, error) {
+func (p postgresDB) GetCities() ([]model.City, error) {
+	var cities []model.City
+	err := p.pgDB.Model(&cities).Table("cities").Select()
+	return cities, err
+}
+
+func (p postgresDB) WeatherDataExists(city, date string) (bool, error) {
 	now := time.Now()
 	var timestamp string
-	err := f.QueryDatabase(&timestamp, "timestamp", date, now.Hour(), strings.ToLower(city))
+	err := p.QueryDatabase(&timestamp, "timestamp", date, now.Hour(), strings.ToLower(city))
 	if err != nil {
 		return false, err
 	}
@@ -99,7 +100,7 @@ func (f postgresDB) WeatherDataExists(city, date string) (bool, error) {
 	return false, nil
 }
 
-func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, error) {
+func (p postgresDB) GetWeatherRecords(city, date string) (model.WeatherRecord, error) {
 	var today model.WeatherRecord
 	city = strings.ToLower(city)
 	year, month, day, err := utils.SplitDate(date)
@@ -107,42 +108,33 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 		return model.WeatherRecord{}, err
 	}
 	utils.SetDate(year, month, day)
-	dataExists, err := f.WeatherDataExists(city, date)
+	dataExists, err := p.WeatherDataExists(city, date)
 	if err != nil {
 		return model.WeatherRecord{}, err
 	}
 	if !dataExists {
-		records, err := utils.GetWeatherRecordsFromFiles(city)
-		if err != nil {
-			return model.WeatherRecord{}, err
+		var records []model.WeatherRecord
+		if utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) {
+			records, err = utils.GetWeatherRecordsFromFiles(city)
+			if err != nil {
+				return model.WeatherRecord{}, err
+			}
 		}
 		if len(records) != 0 {
 			if len(records[0].Hours) != 0 {
 				timestamp := records[0].Hours[0].TimeStamp[:10]
 				if timestamp != date {
-					log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
-					today, err = utils.RequestWeather()
-					if err != nil {
-						return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
-					}
-					_, err = utils.SaveFutureWeatherInFile(city, date)
-					if err != nil {
-						return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
-					}
+					today, err = getWeatherRecordsFromAPIAndSave(city, date)
 					utils.SetDate(year, month, day)
 				}
 			} else {
-				log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
-				today, err = utils.RequestWeather()
-				if err != nil {
-					return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
-				}
-				_, err = utils.SaveFutureWeatherInFile(city, date)
-				if err != nil {
-					return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
-				}
+				today, err = getWeatherRecordsFromAPIAndSave(city, date)
 				utils.SetDate(year, month, day)
 			}
+		}
+		if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) {
+			today, err = getWeatherRecordsFromAPIAndSave(city, date)
+			utils.SetDate(year, month, day)
 		}
 		records, err = utils.GetWeatherRecordsFromFiles(city)
 		if err != nil {
@@ -152,7 +144,7 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 			return model.WeatherRecord{}, fmt.Errorf("failed to get weather records! (internal error)")
 		}
 		for i := 0; i < len(records); i++ {
-			err := f.InsertCityWeatherRecordsToTable(records[i])
+			err := p.InsertCityWeatherRecordsToTable(records[i], city)
 			if err != nil {
 				return model.WeatherRecord{}, err
 			}
@@ -160,21 +152,116 @@ func (f postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, er
 	}
 	if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) && dataExists {
 		log.Print("INFO: Weather records don't exist! Getting weather records from Database.")
-		_, err := f.getHourWeatherRecord(city, date)
+		_, err := p.getHourWeatherRecord(city, date)
 		if err != nil {
 			return model.WeatherRecord{}, err
 		}
+		_, err = utils.SaveFutureWeatherInFile(city, date)
+		if err != nil {
+			return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
+		}
 	}
-	today, err = f.getHourWeatherRecord(city, date)
+	today, err = p.getHourWeatherRecord(city, date)
 	if err != nil {
 		return model.WeatherRecord{}, err
 	}
 	return today, nil
 }
 
-func (f postgresDB) getHourWeatherRecord(city, date string) (model.WeatherRecord, error) {
+func getWeatherRecordsFromAPIAndSave(city, date string) (model.WeatherRecord, error) {
+	log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
+	today, err := utils.RequestWeather()
+	if err != nil {
+		return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
+	}
+	_, err = utils.SaveFutureWeatherInFile(city, date)
+	if err != nil {
+		return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
+	}
+	return today, nil
+}
+
+func (p postgresDB) GetWeatherRecord(city, date string) (model.WeatherRecord, error) {
+	var record model.WeatherRecord
 	city = strings.ToLower(city)
-	records, err := f.QueryDayDatabase(city, date)
+	year, month, day, err := utils.SplitDate(date)
+	if err != nil {
+		return model.WeatherRecord{}, err
+	}
+	date, err = utils.SetDate(year, month, day)
+	if err != nil {
+		return model.WeatherRecord{}, nil
+	}
+	_, err = utils.CheckDate(date)
+	if err != nil {
+		return model.WeatherRecord{}, nil
+	}
+	dataExists, err := p.WeatherDataExists(city, date)
+	if err != nil {
+		return model.WeatherRecord{}, err
+	}
+	if !dataExists {
+		record, err = utils.GetWeatherRecordFromFile(city)
+		if err != nil {
+			return model.WeatherRecord{}, err
+		}
+		if len(record.Hours) != 0 {
+			timestamp := record.Hours[0].TimeStamp[:10]
+			if timestamp != date {
+				log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
+				record, err = utils.RequestWeather()
+				if err != nil {
+					return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
+				}
+				err = utils.SaveWeather(city, "0", record)
+				if err != nil {
+					return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
+				}
+				utils.SetDate(year, month, day)
+			}
+		} else {
+			log.Print("INFO: Weather records don't exist! Getting new weather records from API Server.")
+			record, err = utils.RequestWeather()
+			if err != nil {
+				return model.WeatherRecord{}, fmt.Errorf("failed to request weather: %v", err)
+			}
+			err = utils.SaveWeather(city, "0", record)
+			if err != nil {
+				return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
+			}
+			utils.SetDate(year, month, day)
+		}
+		if len(record.Hours) == 0 {
+			return model.WeatherRecord{}, fmt.Errorf("failed to get weather records! (internal error)")
+		}
+		err = p.InsertCityWeatherRecordsToTable(record, city)
+		if err != nil {
+			return model.WeatherRecord{}, err
+		}
+	}
+	if !utils.PathExists(fmt.Sprintf("resources/weather_records/%v_0-orig.json", city)) && dataExists {
+		log.Print("INFO: Weather records don't exist! Getting weather records from Database.")
+		record, err := p.getHourWeatherRecord(city, date)
+		if err != nil {
+			return model.WeatherRecord{}, err
+		}
+		err = utils.SaveWeather(city, "0", record)
+		if err != nil {
+			return model.WeatherRecord{}, fmt.Errorf("failed to save future weather: %v", err)
+		}
+	}
+	if len(record.Hours) == 0 {
+		record, err = p.getHourWeatherRecord(city, date)
+		if err != nil {
+			return model.WeatherRecord{}, err
+		}
+	}
+	return record, nil
+}
+
+func (p postgresDB) getHourWeatherRecord(city, date string) (model.WeatherRecord, error) {
+	city = strings.ToLower(city)
+	records, err := p.QueryDayDatabase(city, date)
 	if err != nil {
 		return model.WeatherRecord{}, err
 	}
@@ -186,12 +273,11 @@ func (f postgresDB) getHourWeatherRecord(city, date string) (model.WeatherRecord
 	return today, nil
 }
 
-func (f postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord) error {
-	city := utils.GetCityName()
+func (p postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord, city string) error {
 	for i := 0; i < len(record.Hours); i++ {
 		record.Hours[i].City = strings.ToLower(city)
 	}
-	res, err := pgDB.Model(&record.Hours).OnConflict("DO NOTHING").Insert()
+	res, err := p.pgDB.Model(&record.Hours).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return fmt.Errorf("failed to insert: %v", err)
 	}
@@ -199,8 +285,8 @@ func (f postgresDB) InsertCityWeatherRecordsToTable(record model.WeatherRecord) 
 	return nil
 }
 
-func (f postgresDB) Close() error {
-	err := pgDB.Close()
+func (p postgresDB) Close() error {
+	err := p.pgDB.Close()
 	if err != nil {
 		return err
 	}
@@ -208,7 +294,7 @@ func (f postgresDB) Close() error {
 	return nil
 }
 
-func (f postgresDB) SetLocationByCityName(city string) (string, error) {
+func (p postgresDB) SetLocationByCityName(city string) (string, error) {
 	cityName, err := utils.SetLocationByCityName(city)
 	if err != nil {
 		return "", err
@@ -219,16 +305,15 @@ func (f postgresDB) SetLocationByCityName(city string) (string, error) {
 		return "", err
 	}
 	log.Printf("INFO: Location set to \"%v\" with Lat: %v, Lon: %v", lcity, lat, lon)
-	err = f.InsertCityIntoDatabase(city, city)
+	err = p.InsertCityIntoDatabase(cityName)
 	if err != nil {
 		return "", err
 	}
-	log.Printf("INFO: City \"%v\" inserted into database", lcity)
 	return cityName, err
 }
 
-func (f postgresDB) InsertCityIntoDatabase(value, name string) error {
-	cities := utils.GetCities()
+func (p postgresDB) InsertCityIntoDatabase(name string) error {
+	cities := utils.GetSavedCities()
 	lat, lon, err := utils.GetLocation()
 	cityName := strings.ToLower(name)
 	city := model.City{
@@ -236,65 +321,20 @@ func (f postgresDB) InsertCityIntoDatabase(value, name string) error {
 		Lat:  lat,
 		Lon:  lon,
 	}
-	_, err = pgDB.Model(&city).OnConflict("DO NOTHING").Insert()
+	_, err = p.pgDB.Model(&city).OnConflict("DO NOTHING").Insert()
 	if err != nil {
 		return fmt.Errorf("failed insert: %v", err)
 	}
 	utils.SetCities(cities)
+	log.Printf("INFO: City \"%v\" inserted into database", cityName)
 	return nil
 }
 
-func (f postgresDB) QueryCitiesDatabase(t any, value, name string) error {
+func (p postgresDB) QueryCitiesDatabase(t any, value, name string) error {
 	query := fmt.Sprintf("SELECT %v FROM cities WHERE name='%v'", value, name)
-	_, err := pgDB.Query(pg.Scan(&t), query)
+	_, err := p.pgDB.Query(pg.Scan(&t), query)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
-/* OLD WAY didnt quite work
-path := fmt.Sprintf("resources/pg/data/%v.csv", city)
-if !utils.PathExists(path) {
-	return fmt.Errorf("ERROR: Path \"%v\" ", path)
-}
-utils.ConvertWeatherRecords()
-file, err := os.Open(path)
-if err != nil {
-	return fmt.Errorf("ERROR: Couldn't open file (%v)", path)
-}
-defer file.Close()
-csvReader := csv.NewReader(file)
-records, err := csvReader.ReadAll()
-if err != nil {
-	return fmt.Errorf("ERROR: Couldn't read file %v.csv\nERROR: %v", city, err)
-}
-_, err = pgDB.Exec(`CREATE TEMPORARY TABLE IF NOT EXISTS temp_weather_records (id INT NOT NULL, timestamp TIMESTAMP, source_id INT, precipitation FLOAT, pressure_msl FLOAT, sunshine FLOAT, temperature FLOAT, wind_direction INT, wind_speed FLOAT, cloud_cover FLOAT, dew_point FLOAT, relative_humidity FLOAT, visibility FLOAT, wind_gust_direction INT, wind_gust_speed FLOAT, condition VARCHAR(100), precipitation_probability FLOAT, precipitation_probability_6h FLOAT, solar FLOAT, icon VARCHAR(100), city VARCHAR(100), PRIMARY KEY(ID));`)
-if err != nil {
-	return fmt.Errorf("ERROR: Couldn't create temporary table temp_weather_records\nERROR: %v", err)
-}
-var csvString []string
-var count int
-_, err = pgDB.Query(pg.Scan(&count), "SELECT COUNT(*) FROM weather_records")
-if err != nil {
-	return fmt.Errorf("ERROR: Count failed!\nERROR: %v", err)
-}
-for _, inner := range records {
-	inner = append([]string{strconv.Itoa(count + 1)}, inner...)
-	csvString = append(csvString, strings.Join(inner, ","))
-	count++
-}
-csvData := strings.Join(csvString, "\n")
-reader := strings.NewReader(csvData)
-_, err = pgDB.CopyFrom(reader, `COPY temp_weather_records FROM STDIN WITH CSV`)
-if err != nil {
-	return fmt.Errorf("ERROR: Couldn't copy temp_weather_records\nERROR: %v", err)
-}
-_, err = pgDB.Exec("INSERT INTO weather_records SELECT * FROM temp_weather_records ON CONFLICT (id, timestamp, city) DO NOTHING")
-if err != nil {
-	return fmt.Errorf("failed to insert temp_weather_records into weather_records: %v", err)
-}
-_, err = pgDB.Exec("DROP TABLE temp_weather_records")
-if err != nil {
-	return fmt.Errorf("failed to drop temp_weather_records: %v", err)
-}*/

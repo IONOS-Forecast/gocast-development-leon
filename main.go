@@ -8,6 +8,8 @@ import (
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/db"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/metric"
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/utils"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -18,6 +20,8 @@ var (
 )
 
 func main() {
+	reg := prometheus.NewRegistry()
+	metric.NewMetrics(reg)
 	utils.MakeCities()
 	utils.DotEnvironment()
 	utils.SetWeatherAPIURL(utils.Options.WeatherAPIURL)
@@ -33,32 +37,40 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	defer database.Close()
+	cityDB := db.NewCityDB(database, "")
+	cities, err := cityDB.GetCities()
+	if err != nil {
+		log.Print(err)
+	}
+	weatherMapDB := db.NewWeatherMapDB(cities, utils.Options.GeoAPIURL, utils.Options.GeoAPIKey)
 	// Getting Default Cities if needed
 	cityName, err = database.SetLocationByCityName("Berlin")
 	if err != nil {
 		log.Print(err)
 	}
-	_, err = database.GetWeatherRecord(cityName, date)
+	record, err := database.GetWeatherRecords(cityName, date)
 	if err != nil {
 		log.Print(err)
 	}
+	metric.UpdateMetrics(record, time.Now().Hour())
 	cityName, err = database.SetLocationByCityName("München")
 	if err != nil {
 		log.Print(err)
 	}
-	_, err = database.GetWeatherRecord(cityName, date)
+	record, err = database.GetWeatherRecords(cityName, date)
 	if err != nil {
 		log.Print(err)
 	}
+	metric.UpdateMetrics(record, time.Now().Hour())
 	cityName, err = database.SetLocationByCityName("Hamburg")
 	if err != nil {
 		log.Print(err)
 	}
-	_, err = database.GetWeatherRecord(cityName, date)
+	record, err = database.GetWeatherRecords(cityName, date)
 	if err != nil {
 		log.Print(err)
 	}
+	metric.UpdateMetrics(record, time.Now().Hour())
 	/* TODO: ADD OR REMOVE LATER
 	Error Examples and MinutesRequest
 	fmt.Println(":----------------------------------------------------------------------------:")
@@ -79,9 +91,40 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	requestWeatherEvery(time.Duration(minutesRequest*int(time.Minute)), showWeather)*/
-	var handler metric.Handler
-	http.HandleFunc("/GET", handler.Get)
-	http.HandleFunc("/error", handler.Error)
-	http.ListenAndServe(":3333", nil)
+	*/
+	promHandler := promhttp.HandlerFor(reg, promhttp.HandlerOpts{})
+	handler := metric.NewHandler(database, cityDB, weatherMapDB)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/direct", handler.Get)
+	mux.HandleFunc("/error", handler.Error)
+
+	cityName, err = database.SetLocationByCityName("Berlin")
+	if err != nil {
+		log.Print(err)
+	}
+	record, err = database.GetWeatherRecord(cityName, time.Now().Format("2006-01-02"))
+	metric.UpdateMetricsNow(record)
+
+	pMux := http.NewServeMux()
+	pMux.Handle("/metrics", promHandler)
+	go func() {
+		c := time.NewTicker(10 * time.Minute)
+		for {
+			select {
+			case <-c.C:
+				record, err = database.GetWeatherRecord(cityName, time.Now().Format("2006-01-02"))
+				if err != nil {
+					log.Print(err)
+				}
+				metric.UpdateMetricsNow(record)
+			}
+		}
+	}()
+	go func() {
+		log.Fatal(http.ListenAndServe(":8080", mux))
+	}()
+	go func() {
+		log.Fatal(http.ListenAndServe(":8081", pMux))
+	}()
+	select {}
 }

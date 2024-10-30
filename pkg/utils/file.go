@@ -110,7 +110,8 @@ func GetWeatherRecordsFromFiles(city string) ([]model.WeatherRecord, error) {
 		path := fmt.Sprintf("resources/weather_records/%v_%v-orig.json", strings.ToLower(city), strconv.Itoa(count))
 		file, err := os.Open(path)
 		if err != nil {
-			return nil, err
+			SaveFutureWeatherInFile(city, GetDate())
+			GetWeatherRecordsFromFiles(city)
 		}
 		defer file.Close()
 
@@ -127,4 +128,30 @@ func GetWeatherRecordsFromFiles(city string) ([]model.WeatherRecord, error) {
 	}
 	log.Printf("INFO: Weather Records received from File")
 	return records, nil
+}
+
+func GetWeatherRecordFromFile(city string) (model.WeatherRecord, error) {
+	var record model.WeatherRecord
+	path := fmt.Sprintf("resources/weather_records/%v_%v-orig.json", strings.ToLower(city), 0)
+	file, err := os.Open(path)
+	if err != nil {
+		record, err := RequestWeather()
+		if err != nil {
+			return model.WeatherRecord{}, err
+		}
+		SaveWeather(city, "0", record)
+		GetWeatherRecordFromFile(city)
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return model.WeatherRecord{}, err
+	}
+	err = json.Unmarshal(content, &record)
+	if err != nil {
+		return model.WeatherRecord{}, err
+	}
+	log.Printf("INFO: Weather Records received from File")
+	return record, nil
 }
