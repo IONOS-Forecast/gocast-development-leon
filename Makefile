@@ -20,6 +20,10 @@ test: # Use "go tool cover -html=./bin/metrictests.out" in terminal to open cove
 	go test ./pkg/metric/ ./pkg/utils/ -cover -coverprofile ./bin/metrictests.out
 
 run:
-	make startdb
-	sleep 2
+	docker-compose up
+
+run2:
 	go run main.go
+
+stop:
+	docker-compose down
