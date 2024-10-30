@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/IONOS-Forecast/gocast-development-leon/Gocast/pkg/db"
@@ -27,6 +28,7 @@ func main() {
 	utils.SetWeatherAPIURL(utils.Options.WeatherAPIURL)
 	utils.SetGeocodingAPIURL(utils.Options.GeoAPIURL)
 	utils.SetGeocodingAPIKey(utils.Options.GeoAPIKey)
+	reqAftMin := utils.Options.MinutesRequest
 	now := time.Now()
 	date, err := utils.SetDate(now.Year(), int(now.Month()), now.Day())
 	if err != nil {
@@ -108,7 +110,11 @@ func main() {
 	pMux := http.NewServeMux()
 	pMux.Handle("/metrics", promHandler)
 	go func() {
-		c := time.NewTicker(10 * time.Minute)
+		minutes, err := strconv.Atoi(reqAftMin)
+		if err != nil {
+			log.Fatal(err)
+		}
+		c := time.NewTicker(time.Duration(minutes) * time.Minute)
 		for {
 			select {
 			case <-c.C:
